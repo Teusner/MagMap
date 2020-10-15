@@ -12,6 +12,8 @@ TODO :
  - tune the kalman filter
  - supress set_cmd(U) and give U for each step
  - fix the kalmann filter with B and U
+ - Showing the uncertainty on phi
+ - Computing the trajectory of the magnetometer using Interval analysis
 """
 
 
@@ -133,7 +135,7 @@ class Tank():
 		C = np.eye(4)[:3, :]
 		Y = self.g(U)
 		U = self.h * B @ U
-		Γα = self.h * np.diag((1, 1, 0.1, 0.5))
+		Γα = self.h * np.diag((1, 1, 0.05, 0.1))
 		Γβ = np.diag((1, 1, 0.1))
 		self.Xhat, self.Γx = kalman(self.Xhat, self.Γx, U, Y, Γα, Γβ, A, C)
 
@@ -184,7 +186,6 @@ class Tank():
 		vibes.newGroup("vehiclePath")
 		vibes.newGroup("vehicle")
 		vibes.newGroup("magnetometer")
-		
 
 	def draw(self):
 		"""
@@ -211,6 +212,11 @@ class Tank():
 		vibes.clearGroup("estimatedState")
 		vibes.drawEllipse(self.X[0, 0], self.X[1, 0], a, b, α, color="#c7ecee[#dff9fb]", group="estimatedState")
 		vibes.drawPoint(self.Xhat[0, 0], self.Xhat[1, 0], radius=1, color="#eb4d4b") #eb4d4b #95afc0
+
+		# Draw the estimated rope angle
+		p = self.anchor_point - 0.5 * np.array([[np.cos(self.Xhat[2, 0] + self.Xhat[3, 0])], [np.sin(self.Xhat[2, 0] + self.Xhat[3, 0])]])
+		vibes.drawPoint(p[0, 0], p[1, 0], radius=3, color="red[red]", group="estimatedState")
+		#vibes.drawPie(self.anchor_point.tolist(), [0.5, 0.52], [np.pi - self.Γx[3, 3]/2, np.pi + self.Γx[3, 3]/2], color="purple", use_radian=True, group="estimatedState")
 
 		# Draw the path
 		vibes.drawLine(np.transpose(self.path[-2:]).tolist(), color="lightGray", group="vehiclePath")  
