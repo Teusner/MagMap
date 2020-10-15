@@ -6,7 +6,6 @@ import time
 
 """
 TODO :
- - change dX() to f(x, u) like g(x, u)
  - docstring updating
  - supress some class variable which could be replaced as local variables
  - fix the loose rope detector with the 0.5 as threshold which is not clean
@@ -17,7 +16,7 @@ TODO :
 
 
 class Tank():
-	def __init__(self, X=np.array([[0.], [0.], [0.], [0.]], dtype=np.float), U=np.array([[0.], [0.]], dtype=np.float), width=0.6, wheel_radius=0.5, alpha=1, L=3, h=1/20):
+	def __init__(self, X=np.array([[0.], [0.], [0.], [0.]], dtype=np.float), width=0.6, wheel_radius=0.5, alpha=1, L=3, h=1/20):
 		"""
 		Constructor of the vehicle.
 
@@ -39,7 +38,6 @@ class Tank():
 			Coefficient between the motor's control and the wheel's spinning rate
 		"""
 		self.X = X
-		self.U = U
 		self.M = X[:2] - L/2 * np.array([[np.cos(X[2, 0])], [np.sin(X[2, 0])]])
 		self.L = L
 		self.width = width
@@ -59,7 +57,7 @@ class Tank():
 		self.__init_vibes__()
 		
 
-	def dX(self):
+	def f(self, U):
 		"""
 		Dynamic function of the vehicle.
 
@@ -77,14 +75,14 @@ class Tank():
 		numpy.ndarray
 			The derivative of the state vector with the current control vector.
 		"""
-		v = (self.U[0, 0] + self.U[1, 0])/2
+		v = (U[0, 0] + U[1, 0])/2
 		dx = self.wheel_radius * self.alpha * v * np.cos(self.X[2, 0])
 		dy = self.wheel_radius * self.alpha * v * np.sin(self.X[2, 0])
-		dtheta = self.wheel_radius*self.alpha/self.width*(self.U[1, 0] - self.U[0, 0])
+		dtheta = self.wheel_radius*self.alpha/self.width*(U[1, 0] - U[0, 0])
 		dphi = - v * np.sin(self.X[3, 0]) / self.L - dtheta
 		return np.array([[dx], [dy], [dtheta], [dphi]])
 
-	def g(self):
+	def g(self, U):
 		"""
 		Compute the observation vector which is the measurement of the vehicle's state.
 
@@ -100,12 +98,12 @@ class Tank():
 		numpy.ndarray
 			The observation vector.
 		"""
-		rn = np.array([[1], [1], [0.1]]) * np.random.randn(3, 1)
+		rn = np.array([[1], [1], [0.05]]) * np.random.randn(3, 1)
 		return self.X[:3] + rn
 
-	def jacobian(self):
+	def jacobian(self, U):
 		"""
-		Compute the Jacobian matrix of the system dfc(X, U)/dX.
+		Compute the Jacobian matrix of the system df(X, U)/dX.
 
 		Parameters
 		----------
@@ -119,45 +117,32 @@ class Tank():
 		numpy.ndarray
 			The Jacobian matrix of the system.
 		"""
-		v = (self.U[0, 0] + self.U[1, 0])/2
+		v = (U[0, 0] + U[1, 0])/2
 		J = np.zeros((4, 4))
 		J[0, 2] = - self.wheel_radius * self.alpha * v * np.sin(self.X[2, 0])
 		J[1, 2] = self.wheel_radius * self.alpha * v * np.cos(self.X[2, 0])
 		J[2, 3] = - v * np.cos(self.X[3, 0]) / self.L
 		return J
 
-	def state_estimation(self):
+	def state_estimation(self, U):
 		"""
 		Vehicle state estimation using a kalman filter.
 		"""
-		A = np.eye(4) + h * self.jacobian()
+		A = np.eye(4) + h * self.jacobian(U)
 		B = np.zeros((4, 2))
 		C = np.eye(4)[:3, :]
-		Y = self.g()
-		U = self.h * B @ self.U
+		Y = self.g(U)
+		U = self.h * B @ U
 		Γα = self.h * np.diag((1, 1, 0.1, 0.5))
 		Γβ = np.diag((1, 1, 0.1))
 		self.Xhat, self.Γx = kalman(self.Xhat, self.Γx, U, Y, Γα, Γβ, A, C)
 
-	def set_cmd(self, U):
-		"""
-		Set a command to the vehicle. As it's a tank vehicle, the control vector is
-		of size (2, 1) and represent [[u1], [u2]], where u1 is the speed of the left
-		wheel, and u2 that of the right one.
-
-		Parameters
-		----------
-		U : numpy.ndarray
-			Control vector
-		"""
-		self.U = U
-
-	def step(self):
+	def step(self, U):
 		# Processing the new state
-		self.X += self.h * self.dX()
+		self.X += self.h * self.f(U)
 
 		# State estimation
-		self.state_estimation()
+		self.state_estimation(U)
 
 		# Processing the new anchor point position
 		self.anchor_point = self.X[:2] - 0.3*np.array([[np.cos(self.X[2, 0])], [np.sin(self.X[2, 0])]])
@@ -167,7 +152,7 @@ class Tank():
 
 		# Rope processing
 		rope = self.anchor_point - self.M
-		v = (self.U[0, 0] + self.U[1, 0])/2
+		v = (U[0, 0] + U[1, 0])/2
 
 		# Loose rope testing
 		if np.sign(v) * np.array([[np.cos(self.X[2, 0])], [np.sin(self.X[2, 0])]]).T @ rope > 0 and np.linalg.norm(rope) >= self.L - 0.5:
@@ -242,9 +227,9 @@ if __name__=="__main__":
 	h = 1/20
 	for i in range (1000):
 		if i % 70 > 35:
-			t.set_cmd(np.array([[1], [0.7]]))
+			U = np.array([[1], [0.7]])
 		else:
-			t.set_cmd(np.array([[0.7], [1]]))
-		t.step()
+			U = np.array([[0.7], [1]])
+		t.step(U)
 		t.draw()
 		time.sleep(0.05)
