@@ -10,6 +10,8 @@ TODO :
  - supress some class variable which could be replaced as local variables
  - fix the loose rope detector with the 0.5 as threshold which is not clean
  - tune the kalman filter
+ - Tune g(x, u) for 1 Hz gnss observation
+ - Adding Interval analysis to estimate the state of the robot
  - supress set_cmd(U) and give U for each step
  - fix the kalmann filter with B and U
  - Showing the uncertainty on phi
@@ -18,7 +20,7 @@ TODO :
 
 
 class Tank():
-	def __init__(self, X=np.array([[0.], [0.], [0.], [0.]], dtype=np.float), width=0.6, wheel_radius=0.5, alpha=1, L=3, h=1/20):
+	def __init__(self, X=np.array([[0.], [0.], [0.], [0.]], dtype=np.float), L=3, h=1/20):
 		"""
 		Constructor of the vehicle.
 
@@ -32,19 +34,10 @@ class Tank():
 			Magnetometer position [[xm], [ym]], where xm is the abscissa and ym is the ordinate
 		L : float
 			The length of the rope
-		width : float
-			Width of the robot between the two wheels in meters
-		wheel_radius : float
-			Wheel's radius in meters
-		alpha : float
-			Coefficient between the motor's control and the wheel's spinning rate
 		"""
 		self.X = X
 		self.M = X[:2] - L/2 * np.array([[np.cos(X[2, 0])], [np.sin(X[2, 0])]])
 		self.L = L
-		self.width = width
-		self.wheel_radius = wheel_radius
-		self.alpha = alpha
 		self.path = X[:2]
 		self.anchor_point = self.X[:2] - 0.3*np.array([[np.cos(self.X[2, 0])], [np.sin(self.X[2, 0])]])
 		self.loose_rope = True
@@ -57,7 +50,6 @@ class Tank():
 		self.Γx = 1000 * np.eye(4)
 
 		self.__init_vibes__()
-		
 
 	def f(self, U):
 		"""
@@ -78,9 +70,9 @@ class Tank():
 			The derivative of the state vector with the current control vector.
 		"""
 		v = (U[0, 0] + U[1, 0])/2
-		dx = self.wheel_radius * self.alpha * v * np.cos(self.X[2, 0])
-		dy = self.wheel_radius * self.alpha * v * np.sin(self.X[2, 0])
-		dtheta = self.wheel_radius*self.alpha/self.width*(U[1, 0] - U[0, 0])
+		dx = v * np.cos(self.X[2, 0])
+		dy = v * np.sin(self.X[2, 0])
+		dtheta = U[1, 0] - U[0, 0]
 		dphi = - v * np.sin(self.X[3, 0]) / self.L - dtheta
 		return np.array([[dx], [dy], [dtheta], [dphi]])
 
@@ -121,8 +113,8 @@ class Tank():
 		"""
 		v = (U[0, 0] + U[1, 0])/2
 		J = np.zeros((4, 4))
-		J[0, 2] = - self.wheel_radius * self.alpha * v * np.sin(self.X[2, 0])
-		J[1, 2] = self.wheel_radius * self.alpha * v * np.cos(self.X[2, 0])
+		J[0, 2] = - v * np.sin(self.X[2, 0])
+		J[1, 2] = v * np.cos(self.X[2, 0])
 		J[2, 3] = - v * np.cos(self.X[3, 0]) / self.L
 		return J
 
@@ -229,10 +221,10 @@ class Tank():
 
 
 if __name__=="__main__":
-	t = Tank(alpha=3)
+	t = Tank()
 	h = 1/20
 	for i in range (1000):
-		if i % 70 > 35:
+		if i % 100 > 50:
 			U = np.array([[1], [0.7]])
 		else:
 			U = np.array([[0.7], [1]])
