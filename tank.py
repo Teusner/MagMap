@@ -1,8 +1,8 @@
 import numpy as np
 from vibes import vibes
-from kalman import kalman
-from scipy.linalg import sqrtm
 import time
+from itertools import cycle
+
 
 """
 TODO :
@@ -35,20 +35,26 @@ class Tank():
 		L : float
 			The length of the rope
 		"""
-		self.X = X
-		self.M = X[:2] - L/2 * np.array([[np.cos(X[2, 0])], [np.sin(X[2, 0])]])
-		self.L = L
-		self.path = X[:2]
-		self.anchor_point = self.X[:2] - 0.3*np.array([[np.cos(self.X[2, 0])], [np.sin(self.X[2, 0])]])
-		self.loose_rope = True
-
 		# Integration step
 		self.h = h
 
-		# State estimation
-		self.Xhat = np.zeros(X.shape)
-		self.Γx = 1000 * np.eye(4)
+		# Measurement iterator
+		self.gnss_measurement = cycle([k==0 for k in range(20)])
 
+		# State representation
+		self.X = X
+		self.Y = self.g(np.array([[0], [0]]))
+		self.M = X[:2] - L/2 * np.array([[np.cos(X[2, 0])], [np.sin(X[2, 0])]])
+
+		# Rope variables
+		self.L = L
+		self.loose_rope = True
+
+		# Path of the vehicle
+		self.path = X[:2]
+		self.anchor_point = self.X[:2] - 0.3*np.array([[np.cos(self.X[2, 0])], [np.sin(self.X[2, 0])]])
+		
+		# Initialize VIBes
 		self.__init_vibes__()
 
 	def f(self, U):
@@ -57,12 +63,18 @@ class Tank():
 
 		Parameters
 		----------
+		X : numpy.ndarray
+			State of the robot
+		U : numpy.ndarray
+			Control vector
 		dx : float
 			Derivative of x
 		dy : float
 			Derivative of y
 		dtheta : float
 			Derivative of theta
+		dphi : float
+			Derivative of phi
 
 		Returns
 		-------
@@ -86,57 +98,28 @@ class Tank():
 			State of the robot
 		U : numpy.ndarray
 			Control vector
+		p : numpy.ndarray
+			Measured position of the robot p = [[xm], [ym]]
+		theta : numpy.ndarray
+			Measured angle of the robot
+		v : numpy.ndarray
+			Measured linear speed of the robot v = [[vx], [vy]]
 
 		Returns
 		-------
 		numpy.ndarray
 			The observation vector.
 		"""
-		rn = np.array([[1], [1], [0.05]]) * np.random.randn(3, 1)
-		return self.X[:3] + rn
-
-	def jacobian(self, U):
-		"""
-		Compute the Jacobian matrix of the system df(X, U)/dX.
-
-		Parameters
-		----------
-		X : numpy.ndarray
-			State of the robot
-		U : numpy.ndarray
-			Control vector
-
-		Returns
-		-------
-		numpy.ndarray
-			The Jacobian matrix of the system.
-		"""
-		v = (U[0, 0] + U[1, 0])/2
-		J = np.zeros((4, 4))
-		J[0, 2] = - v * np.sin(self.X[2, 0])
-		J[1, 2] = v * np.cos(self.X[2, 0])
-		J[2, 3] = - v * np.cos(self.X[3, 0]) / self.L
-		return J
-
-	def state_estimation(self, U):
-		"""
-		Vehicle state estimation using a kalman filter.
-		"""
-		A = np.eye(4) + h * self.jacobian(U)
-		B = np.zeros((4, 2))
-		C = np.eye(4)[:3, :]
-		Y = self.g(U)
-		U = self.h * B @ U
-		Γα = self.h * np.diag((1, 1, 0.05, 0.1))
-		Γβ = np.diag((1, 1, 0.1))
-		self.Xhat, self.Γx = kalman(self.Xhat, self.Γx, U, Y, Γα, Γβ, A, C)
+		if next(self.gnss_measurement):
+			self.p = self.X[:2] + 0.5 * np.random.randn(2, 1)
+		theta = self.X[2] + 0.05 * np.random.randn(1, 1)
+		v = (U[0, 0] + U[1, 0])/2 * np.array([[np.cos(self.X[2, 0])], [np.sin(self.X[2, 0])]]) + 0.1 * np.random.randn(2, 1)
+		return np.vstack((self.p, theta, v))
 
 	def step(self, U):
 		# Processing the new state
 		self.X += self.h * self.f(U)
-
-		# State estimation
-		self.state_estimation(U)
+		self.Y = self.g(U)
 
 		# Processing the new anchor point position
 		self.anchor_point = self.X[:2] - 0.3*np.array([[np.cos(self.X[2, 0])], [np.sin(self.X[2, 0])]])
@@ -174,7 +157,6 @@ class Tank():
 		vibes.setFigureProperties({"x": 200, "y": 200, "width": 600, "height": 600})
 
 		# Creating drawing groups
-		vibes.newGroup("estimatedState")
 		vibes.newGroup("vehiclePath")
 		vibes.newGroup("vehicle")
 		vibes.newGroup("magnetometer")
@@ -191,24 +173,7 @@ class Tank():
 		vibes.drawVehicle(self.X[0, 0], self.X[1, 0], self.X[2, 0]*180/np.pi, 1.0, color="black", figure="MagMap", group="vehicle")
 		vibes.drawCircle(self.anchor_point[0, 0], self.anchor_point[1, 0], 0.08, color="black[grey]", group="vehicle")
 
-		# Draw the estimated state
-		η = 0.9
-		if np.linalg.norm(self.Γx[:2, :2]) == 0:
-			self.Γx = self.Γx + 0.01 * np.eye(4)
-		
-		A = sqrtm(- 2 * np.log(1 - η) * self.Γx[:2, :2])
-		_, v = np.linalg.eig(A)
-		f1, f2 = A @ v[:, 0], A @ v[:, 1]
-		a, b, α = 2 * np.linalg.norm(f1), 2 * np.linalg.norm(f2), np.arctan2(v[1, 0], v[0, 0]) * 180 / 3.14
-
-		vibes.clearGroup("estimatedState")
-		vibes.drawEllipse(self.X[0, 0], self.X[1, 0], a, b, α, color="#c7ecee[#dff9fb]", group="estimatedState")
-		vibes.drawPoint(self.Xhat[0, 0], self.Xhat[1, 0], radius=1, color="#eb4d4b") #eb4d4b #95afc0
-
-		# Draw the estimated rope angle
-		p = self.anchor_point - 0.5 * np.array([[np.cos(self.Xhat[2, 0] + self.Xhat[3, 0])], [np.sin(self.Xhat[2, 0] + self.Xhat[3, 0])]])
-		vibes.drawPoint(p[0, 0], p[1, 0], radius=3, color="red[red]", group="estimatedState")
-		#vibes.drawPie(self.anchor_point.tolist(), [0.5, 0.52], [np.pi - self.Γx[3, 3]/2, np.pi + self.Γx[3, 3]/2], color="purple", use_radian=True, group="estimatedState")
+		vibes.drawPoint(self.Y[0, 0], self.Y[1, 0], radius=3, color="#AAAAAA[#77116677]", group="estimatedState")
 
 		# Draw the path
 		vibes.drawLine(np.transpose(self.path[-2:]).tolist(), color="lightGray", group="vehiclePath")  
