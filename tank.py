@@ -11,13 +11,10 @@ TODO :
  - docstring updating
  - supress some class variable which could be replaced as local variables
  - fix the loose rope detector with the 0.5 as threshold which is not clean
- - tune the kalman filter
- - Tune g(x, u) for 1 Hz gnss observation
  - Adding Interval analysis to estimate the state of the robot
- - supress set_cmd(U) and give U for each step
- - fix the kalmann filter with B and U
  - Showing the uncertainty on phi
  - Computing the trajectory of the magnetometer using Interval analysis
+ - Adding the figure as class variable
 """
 
 
@@ -46,7 +43,7 @@ class Tank():
 		# State representation
 		self.X = X
 		self.Y = self.g(np.array([[0], [0]]))
-		self.M = X[:2] - L/2 * np.array([[np.cos(X[2, 0])], [np.sin(X[2, 0])]])
+		self.M = X[:2] - L/2 * np.array([[np.cos(X[2, 0]+X[3, 0])], [np.sin(X[2, 0]+X[3, 0])]])
 
 		# Rope variables
 		self.L = L
@@ -58,14 +55,6 @@ class Tank():
 		
 		# Initialize VIBes
 		self.__init_vibes__()
-
-		# Incertainty interval
-		# self.Iphi = Interval(2*np.pi/3, 4*np.pi/3)
-		# self.Iphi = Interval()
-
-		# self.tdomain = Interval(0, self.h)
-		# self.phi = Tube(self.tdomain, self.h)
-		# self.dphi = Tube(self.tdomain, self.h)
 
 	def f(self, U):
 		"""
@@ -136,18 +125,6 @@ class Tank():
 
 		# Updating the path of the vehicle
 		self.path = np.append(self.path, self.X[:2], axis=1)
-
-		# Interval of phi
-		# ctc_f = CtcFunction(Function("I[4]", "I[1]+I[2]*sin(I[0])+I[3]"))
-
-		# v, omega = Interval((U[0, 0] + U[1, 0])/2), Interval(U[1, 0] - U[0, 0])
-		# I = [self.phi, self.dphi, v, omega]
-		# ctc_f.contract(I)
-		# CtcDeriv.contract(I[0], I[1])
-
-		# dIphi = self.dphi(U, self.Iphi)
-		# self.Iphi += dIphi.integral(t)
-		# print(self.Iphi, self.Iphi.ub() - self.Iphi.lb())
 
 		# Rope processing
 		rope = self.anchor_point - self.M
