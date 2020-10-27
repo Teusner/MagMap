@@ -55,7 +55,7 @@ class Tank():
 		# Path of the vehicle
 		self.path = X[:2]
 		self.anchor_point = self.X[:2] - 0.3*np.array([[np.cos(self.X[2, 0])], [np.sin(self.X[2, 0])]])
-		
+		self.monte_carlo_phi = np.linspace(-np.pi, np.pi, 50)
 		# Initialize VIBes
 		self.__init_vibes__()
 
@@ -66,6 +66,12 @@ class Tank():
 		# self.tdomain = Interval(0, self.h)
 		# self.phi = Tube(self.tdomain, self.h)
 		# self.dphi = Tube(self.tdomain, self.h)
+	
+	def find_magneto_position(self, X, phi):
+		M = np.zeros((2, 1))
+		M = X[:2] - self.L * np.array([[np.cos(phi + X[2,0])], [np.sin(phi + X[2, 0])]])
+		return M
+
 
 	def f(self, U):
 		"""
@@ -98,14 +104,46 @@ class Tank():
 		dphi = - v * np.sin(self.X[3, 0]) / self.L - dtheta
 		return np.array([[dx], [dy], [dtheta], [dphi]])
 
+	def f_mc(self, U, X):
+		"""
+		Dynamic function of the vehicle.
+
+		Parameters
+		----------
+		X : numpy.ndarray
+			State of the robot
+		U : numpy.ndarray
+			Control vector
+		dx : float
+			Derivative of x
+		dy : float
+			Derivative of y
+		dtheta : float
+			Derivative of theta
+		dphi : float
+			Derivative of phi
+
+		Returns
+		-------
+		numpy.ndarray
+			The derivative of the state vector with the current control vector.
+		"""
+		v = (U[0, 0] + U[1, 0])/2
+		dx = v * np.cos(X[2, 0])
+		dy = v * np.sin(X[2, 0])
+		dtheta = U[1, 0] - U[0, 0]
+		dphi = - v * np.sin(X[3, 0]) / self.L - dtheta
+		return np.array([[dx], [dy], [dtheta], [dphi]])
+
+
 	def g(self, U):
 		"""
 		Compute the observation vector which is the measurement of the vehicle's state.
 
 		Parameters
 		----------
-		X : numpy.ndarray
-			State of the robot
+		X : numpy.ndarray X
+			State of the robot 
 		U : numpy.ndarray
 			Control vector
 		p : numpy.ndarray
@@ -130,7 +168,12 @@ class Tank():
 		# Processing the new state
 		self.X += self.h * self.f(U)
 		self.Y = self.g(U)
-
+		self.X_MC = np.copy(self.X)
+		for i in range(self.monte_carlo_phi.shape[0]):
+			self.X_MC[3,0] = self.monte_carlo_phi[i]
+			self.X_MC += self.h * self.f_mc(U, self.X_MC)
+			self.monte_carlo_phi[i] = self.X_MC[3,0]
+		#print("phi monte carlo : ", self.monte_carlo_phi)
 		# Processing the new anchor point position
 		self.anchor_point = self.X[:2] - 0.3*np.array([[np.cos(self.X[2, 0])], [np.sin(self.X[2, 0])]])
 
@@ -171,7 +214,9 @@ class Tank():
 		magnetometer.
 		"""
 		# Initialize VIBes
+		
 		vibes.beginDrawing()
+		
 		vibes.newFigure("MagMap")
 		vibes.axisLimits(-10, 10, -10, 10)
 		vibes.axisEqual()
@@ -200,12 +245,17 @@ class Tank():
 		# Draw the path
 		vibes.drawLine(np.transpose(self.path[-2:]).tolist(), color="lightGray", group="vehiclePath")  
 
+		# Drawing the Monte-Carlo Cloud
+		M = [self.find_magneto_position(self.X, i) for i in self.monte_carlo_phi]
+		for e in M:
+			vibes.drawPoint(e[0, 0], e[1, 0], radius=3, color='r', group="vehicle")
+
 		# Drawing the magnetometer
 		rope_color = "darkRed" if self.loose_rope else "darkGreen"
 		vibes.clearGroup("magnetometer")
+		
 		vibes.drawLine([self.anchor_point[:, 0].tolist(), self.M[:, 0].tolist()], color=rope_color, group="magnetometer")
 		vibes.drawCircle(self.M[0, 0], self.M[1, 0], 0.2, color="black[darkCyan]", group="magnetometer")
-
 
 if __name__=="__main__":
 	t = Tank()
@@ -218,3 +268,4 @@ if __name__=="__main__":
 		t.step(U)
 		t.draw()
 		time.sleep(0.05)
+
