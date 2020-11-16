@@ -1,0 +1,78 @@
+\documentclass[times, twoside, watermark]{style}
+\usepackage{blindtext}
+\usepackage{empheq}
+
+\leadauthor{Quentin Brateau} 
+
+\begin{document}
+
+\title{Magnetic mapping using a trailed magnetometer}
+\shorttitle{MagMap}
+
+% Use letters for affiliations, numbers to show equal authorship (if applicable) and to indicate the corresponding author
+\author[1,\Letter]{Quentin Brateau}
+
+\affil[1]{ENSTA Bretagne, Brest}
+
+\maketitle
+
+%TC:break Abstract
+%the command above serves to have a word count for the abstract
+\begin{abstract}
+    The realization of a magnetic map of a terrain is a powerful tool especially used in mine warfare. This cartography can be done with a magnetometer, but the task is quite difficult. This is why it is useful to use robots to make this cartography. The problem induced by this solution is the addition of magnetic disturbances related to the structure of the robot and its actuators. It is then possible to drag the magnetometer on a sled behind the robot. 
+\end {abstract}
+%TC:break main
+%the command above serves to have a word count for the abstract
+
+\begin{keywords}
+Magnetic | Mapping | Control | Interval Analysis
+\end{keywords}
+
+\begin{corrauthor}
+%\texttt{r.henriques{@}ucl.ac.uk}
+quentin.brateau\at ensta-gretagne.org
+\end{corrauthor}
+
+\input{sections/modelisation.tex}
+
+\input{sections/simulation.tex}
+
+\input{sections/sled.tex}
+
+
+% \begin{acknowledgements}
+% \blindtext
+% \end{acknowledgements}
+
+% \section*{Bibliography}
+% \bibliography{zHenriquesLab-Mendeley}
+
+% %% You can use these special %TC: tags to ignore certain parts of the text.
+% %TC:ignore
+% %the command above ignores this section for word count
+% \onecolumn
+% \newpage
+
+% \section*{Word Counts}
+% This section is \textit{not} included in the word count. 
+% \subsection*{Notes on Nature Methods Brief Communication}
+% \begin{itemize}
+% \item Abstract: 3 sentences, 70 words.
+% \item Main text: 3 pages, 2 figures, 1000-1500 words, more figures possible if under 3 pages
+% \end{itemize}
+
+% \subsection*{Statistics on word count}
+% \detailtexcount
+% \newpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Supplementary Information %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \captionsetup*{format=largeformat}
+% \section{Something about something} \label{note:Note1} 
+% \Blindtext
+
+%TC:endignore
+%the command above ignores this section for word count
+
+\end{document}
