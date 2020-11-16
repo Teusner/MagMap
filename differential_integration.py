@@ -33,7 +33,7 @@ def integrate_box(phi, v, dtheta, h):
 def integrate(phi, alpha, v, theta, h):
 	out = []
 	tdomain = Interval(0, h)
-	n = int(phi.diam()//alpha + 1)
+	n = int(np.sqrt(phi.diam()//alpha + 1))
 	splited = sub_interval(phi, n)
 
 	for interval in splited:
@@ -49,7 +49,7 @@ if __name__ == "__main__":
 	phi = Interval(-np.pi/2, np.pi/2)
 
 	alpha = 0.01
-	deltat = 1000
+	deltat = 300
 
 	vibes.beginDrawing()
 	vibes.newFigure("MagMap")

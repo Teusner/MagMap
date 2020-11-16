@@ -187,7 +187,7 @@ class Tank():
 if __name__=="__main__":
 	t = Tank()
 	h = 1/20
-	for i in range (1000):
+	for i in range (200):
 		if i % 100 > 50:
 			U = np.array([[1], [0.7]])
 		else:
