@@ -6,7 +6,7 @@ from vibes import vibes
 
 def sub_interval(phi, n):
 	if n <= 1:
-		return phi
+		return [phi]
 	A = []
 	lb, d = phi.lb(), phi.diam()
 	for k in range(n):
@@ -19,45 +19,48 @@ def union(I):
 		A = A | i
 	return A
 
-def integrate_step(phi, v, dtheta):
-	dphi = Tube(phi.tdomain(), phi.tdomain().ub(), Interval())
+def integrate_box(phi, v, dtheta, h):
+	dphi = Tube(phi.tdomain(), h, Interval())
 	ctc_f = CtcFunction(Function("phi", "dphi", "v", "dtheta", "dphi+v*sin(phi)-dtheta"))
 	
 	cn = ContractorNetwork()
-	cn.add(ctc_f, [phi, dphi, v, dtheta])
+	cn.add(ctc_f, [phi(0), dphi, v, dtheta])
 	cn.add(ctc.deriv, [phi, dphi])
 	cn.contract()
+	
+	return phi(1)
 
-	return phi
-
-def integrate(phi, n, h):
+def integrate(phi, alpha, v, theta, h):
 	out = []
 	tdomain = Interval(0, h)
+	n = int(phi.diam()//alpha + 1)
 	splited = sub_interval(phi, n)
 
-	v, dtheta = Interval(1.0), Interval(0.)
-
 	for interval in splited:
-		out.append(integrate_step(Tube(tdomain, h, interval), v, dtheta))
+		phi = Tube(tdomain, h/2, Interval())
+		phi.set(interval, Interval(0, h/2))
+		out.append(integrate_box(phi, v, theta, h/2))
 	
 	return union(out), out
 
 
 if __name__ == "__main__":
-	n = 50
 	h = 1/20
 	phi = Interval(-np.pi/2, np.pi/2)
 
-	I, out = integrate(phi, n, h)
+	alpha = 0.01
+	deltat = 1000
 
 	vibes.beginDrawing()
 	vibes.newFigure("MagMap")
 	vibes.setFigureProperties({"x": 200, "y": 200, "width": 600, "height": 600})
-	vibes.axisLimits(-np.pi/4, 3*np.pi/4, -np.pi/2, np.pi/2)
-	for interval in sub_interval(phi, n):
-		vibes.drawBox(0, h, interval[0], interval[1], "black[darkCyan]")
-	for interval in out:
-		vibes.drawBox(h, 2*h, interval.codomain()[0], interval.codomain()[1], "black[darkCyan]")
+	vibes.axisLimits(-h, deltat*h, -np.pi/2, np.pi/2)
 
-	vibes.drawBox(3*h, 4*h, -np.pi/2, np.pi/2, "black[darkCyan]")
-	vibes.drawBox(4*h, 5*h, I.codomain().lb(), I.codomain().ub(), "black[darkCyan]")
+	for k in range(deltat):
+		v = Interval(1.0)
+		theta = Interval(0.4*np.sin(k/20))
+		I, out = integrate(phi, alpha, v, theta, h)
+		lb, ub = I.lb(), I.ub()
+		vibes.drawBox(k*h, (k+1)*h, lb, ub, "darkCyan[darkCyan]")
+		phi = Interval(lb, ub)
+	
