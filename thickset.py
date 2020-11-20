@@ -41,7 +41,7 @@ def ThickTest_from_ThickSep(S):
 if __name__ == "__main__":
 
     # The map
-    m_map = IntervalVector(2, Interval(-25, 25))
+    m_map = IntervalVector(2, Interval(-10, 10))
 
     # All the initial feasible values
     y = Interval(-oo, 0)
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     # Contracting y
     f_dist = Function("x1", "x2", "p1", "p2", "p3", "(x1-p1)^2+(x2-p2)^2-p3^2")
 
-    traj_x = np.arange(-15, 15, 0.2)
+    traj_x = np.array([0]) #np.arange(-15, 15, 0.2)
     traj_y = 10 * np.exp(-(traj_x+5)/10) * np.sin(traj_x/4)
 
     # Initialisation because I am not able to setup S_dist an empty separator
