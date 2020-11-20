@@ -49,7 +49,7 @@ if __name__ == "__main__":
     # Contracting y
     f_dist = Function("x1", "x2", "p1", "p2", "p3", "(x1-p1)^2+(x2-p2)^2-p3^2")
 
-    traj_x = np.array([0]) #np.arange(-15, 15, 0.2)
+    traj_x = np.arange(-15, 15, 0.2)
     traj_y = 10 * np.exp(-(traj_x+5)/10) * np.sin(traj_x/4)
 
     # Initialisation because I am not able to setup S_dist an empty separator
@@ -73,7 +73,3 @@ if __name__ == "__main__":
 
     # Paving the thickset
     P = ThickPaving(m_map, ThickTest_from_ThickSep(S_dist), 0.5, display=True)
-
-    # vibes.beginDrawing()
-    # v = ToVibes(P)
-    # vibes.endDrawing()
