@@ -38,6 +38,16 @@ def ThickTest_from_ThickSep(S):
        return UNK
     return test
 
+My_CMap = {
+  str(IN) : "#c0392b[#c0392b]",
+  str(OUT): "#27ae60[#27ae60]",
+  str(MAYBE): "#e67e22[#e67e22]",
+  str(MAYBE_IN): "#d35400[#e67e22]",
+  str(MAYBE_OUT) :"#d35400[#e67e22]",
+  str(UNK) :  "#f1c40f[#f1c40f]",
+  str(EMPTY) : "[g]"
+}
+
 if __name__ == "__main__":
 
     # The map
@@ -49,7 +59,7 @@ if __name__ == "__main__":
     # Contracting y
     f_dist = Function("x1", "x2", "p1", "p2", "p3", "(x1-p1)^2+(x2-p2)^2-p3^2")
 
-    traj_x = np.arange(-15, 15, 0.2)
+    traj_x = np.array([0]) #np.arange(-15, 15, 0.1)
     traj_y = 10 * np.exp(-(traj_x+5)/10) * np.sin(traj_x/4)
 
     # Initialisation because I am not able to setup S_dist an empty separator
@@ -72,4 +82,11 @@ if __name__ == "__main__":
         S_dist = S_dist | ThickSep_from_function(f_dist, p, y)
 
     # Paving the thickset
-    P = ThickPaving(m_map, ThickTest_from_ThickSep(S_dist), 0.5, display=True)
+    P = ThickPaving(m_map, ThickTest_from_ThickSep(S_dist), 0.1)
+    
+    vibes.beginDrawing()
+    vibes.setFigureSize(m_map.max_diam(), m_map.max_diam())
+    vibes.newFigure("ThickSet")
+    vibes.setFigureProperties({'x':0,'y':0, 'width':500, 'height':500})
+    P.visit(ToVibes(figureName="ThickSet", color_map=My_CMap))
+    vibes.endDrawing()
