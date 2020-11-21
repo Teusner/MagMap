@@ -20,7 +20,7 @@ TODO :
 
 
 class Tank():
-	def __init__(self, X=np.array([[0.], [0.], [0.], [0.]], dtype=np.float), L=3, h=1/20):
+	def __init__(self, X=np.array([[0.], [0.], [0.], [0.]], dtype=np.float), L=3, h=1/20, show=True):
 		"""
 		Constructor of the vehicle.
 
@@ -61,7 +61,8 @@ class Tank():
 		self.anchor_point = self.X[:2] - 0.3*np.array([[np.cos(self.X[2, 0])], [np.sin(self.X[2, 0])]])
 		
 		# Initialize VIBes
-		self.__init_vibes__()
+		if show:
+			self.__init_vibes__()
 
 	def f(self, U):
 		"""

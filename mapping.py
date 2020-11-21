@@ -1,33 +1,109 @@
 import numpy as np
-from vibes import vibes
+from vibes import *
 from pyibex import *
 from tubex_lib import *
 
+from tank import Tank
+
 
 class Mapping:
-    def __init__(self, t0, tf, h):
-        self.h = h
+	def __init__(self, t0, tf, h):
+		self.h = h
 
-        # Trajectory Tubes
-        self.tdomain = Interval(t0, tf)
-        self.x = TubeVector(self.tdomain, self.h, IntervalVector(2))
-        self.v = TubeVector(self.tdomain, self.h, IntervalVector(2))
+		# Trajectory Tubes
+		self.tdomain = Interval(t0, tf+h)
+		self.x = TubeVector(self.tdomain, self.h, IntervalVector(2))
+		self.v = TubeVector(self.tdomain, self.h, IntervalVector(2, Interval(0)))
+		self.v.inflate(1)
 
-        # Contractor Network
-        self.cn = ContractorNetwork()
-        ctc_deriv = CtcDeriv()
-        self.cn.add(ctc_deriv, [self.x, self.v])
+		# Contractor Network
+		self.cn = ContractorNetwork()
+		# ctc_deriv = CtcDeriv()
+		# self.cn.add(ctc_deriv, [self.x, self.v])
+		# self.cn.contract()
 
-    def add_position(self, t, position):
-        n = len(t)
-        for k in range(n):
-            self.cn.add(ctc_eval, [t[i], position[i], self.x, self.v])
-    
-    def add_velocity(self, t, velocity):
-        n = len(t)
-        for k in range(n):
-            self.v.set(velocity[i], Interval(t[i], t[i] + self.h))
+	def add_position(self, t, position, accuracy):
+		n = len(t)
+		ctc_eval = CtcEval()
+		for i in range(n):
+			p = IntervalVector([Interval(position[i, 0]), Interval(position[i, 1])])
+			p.inflate(accuracy)
+			self.cn.add(ctc_eval, [Interval(t[i], t[i]+h), p, self.x, self.v])
+			self.cn.contract()
+		
+	
+	def add_velocity(self, t, velocity, accuracy):
+		n = len(t)
+		for i in range(n):
+			V = IntervalVector([Interval(velocity[i, 0]), Interval(velocity[i, 1])])
+			V.inflate(accuracy)
+			self.v.set(V, t[i])
+			self.cn.contract()
+		self.x.sample(self.v)
+		print(self.x.nb_slices, self.v.nb_slices)
+		ctc_deriv = CtcDeriv()
+		self.cn.add(ctc_deriv, [self.x, self.v])
+		self.cn.contract()
 
 
 if __name__ == "__main__":
-    m = Mapping(0, 10, 1/20)
+	# Time
+	t0, tf, h = 0, 10.1, 1/20
+	T = np.arange(t0, tf, h)
+
+	m = Mapping(t0, tf, h)
+	L = 3
+	tank = Tank(L=L, h=h, show=False)
+
+	# Lu = [U]
+	Lu = []
+
+	# Lg = [p, theta, v]
+	Lg = []
+
+	for t in T:
+		# Command generating
+		if t % 2 > 1:
+			U = np.array([[1], [0.7]])
+		else:
+			U = np.array([[0.7], [1]])
+
+		tank.step(U)
+
+		# Data storage
+		Lu.append(U.flatten())
+		Lg.append(tank.g(U).flatten())
+	
+	Lu, Lg = np.asarray(Lu), np.asarray(Lg)
+	
+	# Adding positions in m
+	accuracy_p = 0.5
+	gnss = np.vstack((np.unique(Lg[:,0]), np.unique(Lg[:,1]))).T
+	t_gnss = T[np.nonzero(np.r_[1, np.diff(Lg[:,0])[:-1]])]
+	m.add_position(t_gnss, gnss, accuracy_p)
+
+	# Adding velocities in m
+	accuracy_v = 0.03
+	m.add_velocity(T, Lg[:, [3,4]], accuracy_v)
+
+	# Contracting
+	m.cn.contract()
+
+	beginDrawing()
+	fig_map = VIBesFigMap("Map")
+	fig_map.set_properties(100, 100, 600, 300)
+	fig_map.smooth_tube_drawing(True)
+	fig_map.add_tube(m.x, "x*", 0, 1)
+	fig_map.axis_limits(-2.5,2.5,-0.1,0.1, True)
+	fig_map.show()
+
+	# fig_dist = VIBesFigTube("vx")
+	# fig_dist.set_properties(100, 100, 600, 300)
+	# fig_dist.add_tube(m.v[0], "vx*")
+	# fig_dist.show()
+
+	# fig_dist2 = VIBesFigTube("vy")
+	# fig_dist2.set_properties(100, 100, 600, 300)
+	# fig_dist2.add_tube(m.v[1], "vx*")
+	# fig_dist2.show()
+	endDrawing()
