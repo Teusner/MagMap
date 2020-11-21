@@ -34,12 +34,18 @@ class Tank():
 			Magnetometer position [[xm], [ym]], where xm is the abscissa and ym is the ordinate
 		L : float
 			The length of the rope
+		IX : IntervalVector(2)
+			Box enclosing the vehicle position in 2D in meters.
 		"""
 		# Integration step
 		self.h = h
 
 		# Measurement iterator
 		self.gnss_measurement = cycle([k==0 for k in range(20)])
+
+		#Box enclosing the position
+		self.IX=IntervalVector([Interval(X[0,0]),Interval(X[1,0])])
+		self.Ip=self.IX
 
 		# State representation
 		self.X = X
@@ -110,10 +116,48 @@ class Tank():
 		numpy.ndarray
 			The observation vector.
 		"""
+
+		# Uncertainties
+		self.sigma_theta = 0.01
+		self.sigma_gnss = 0.5
+		self.sigma_v = 0.03
+
+		update=False
 		if next(self.gnss_measurement):
-			self.p = self.X[:2] + 0.5 * np.random.randn(2, 1)
-		theta = self.X[2] + 0.05 * np.random.randn(1, 1)
-		v = (U[0, 0] + U[1, 0])/2 * np.array([[np.cos(self.X[2, 0])], [np.sin(self.X[2, 0])]]) + 0.1 * np.random.randn(2, 1)
+			self.p = self.X[:2] + self.sigma_gnss * (np.random.random_sample((2, 1)) - 0.5)
+			update=True
+		theta = self.X[2] + self.sigma_theta * (np.random.random() - 0.5)
+		v = (U[0, 0] + U[1, 0])/2 * np.array([[np.cos(self.X[2, 0])], [np.sin(self.X[2, 0])]]) + self.sigma_v * (np.random.random_sample((2, 1)) - 0.5)
+
+		''' IX estimation according to the IMU and GPS'''
+		# Interval enclosing the position
+		self.Ip = IntervalVector([Interval(self.p[0,0]), Interval(self.p[1,0])])
+		self.Ip.inflate(self.sigma_gnss)
+
+		# Interval enclosing theta
+		self.Itheta=Interval(theta)
+		self.Itheta.inflate(self.sigma_theta)
+
+		# Interval enclosing v
+		self.Iv = IntervalVector([Interval(v[0,0]), Interval(v[1,0])])
+		self.Iv.inflate(3*self.sigma_gnss)
+
+		ctc_deriv = CtcDeriv()
+		tdomain = Interval(0, self.h)
+		I=IntervalVector(2,Interval(-oo,oo))
+		tx = TubeVector(tdomain, self.h/2, I)
+		tv = TubeVector(tdomain, self.h/2, self.Iv)
+		tx.set(self.IX, Interval(0, self.h/2))
+
+		# Contractor network
+		cn = ContractorNetwork()
+		cn.add(ctc_deriv,[tx,tv])
+		cn.contract()
+		if update:
+			self.IX=tx(1)&self.Ip
+		else :
+			self.IX=tx(1)
+
 		return np.vstack((self.p, theta, v))
 
 	def step(self, U):
@@ -173,8 +217,9 @@ class Tank():
 		vibes.drawVehicle(self.X[0, 0], self.X[1, 0], self.X[2, 0]*180/np.pi, 1.0, color="black", figure="MagMap", group="vehicle")
 		vibes.drawCircle(self.anchor_point[0, 0], self.anchor_point[1, 0], 0.08, color="black[grey]", group="vehicle")
 
+		vibes.drawBox(self.IX[0].lb(),self.IX[0].ub(),self.IX[1].lb(),self.IX[1].ub(), group="vehicle")
 		vibes.drawPoint(self.Y[0, 0], self.Y[1, 0], radius=3, color="#AAAAAA[#77116677]", group="estimatedState")
-
+		
 		# Draw the path
 		vibes.drawLine(np.transpose(self.path[-2:]).tolist(), color="lightGray", group="vehiclePath")  
 
@@ -188,7 +233,7 @@ class Tank():
 if __name__=="__main__":
 	t = Tank()
 	h = 1/20
-	for i in range (200):
+	for i in range (500):
 		if i % 100 > 50:
 			U = np.array([[1], [0.7]])
 		else:
