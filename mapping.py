@@ -14,36 +14,41 @@ class Mapping:
 		self.tdomain = Interval(t0, tf+h)
 		self.x = TubeVector(self.tdomain, self.h, IntervalVector(2))
 		self.v = TubeVector(self.tdomain, self.h, IntervalVector(2, Interval(0)))
-		self.v.inflate(1)
+		self.v.inflate(10)
+		self.a = TubeVector(self.tdomain, self.h, IntervalVector(2, Interval(0)))
+		self.a.inflate(10)
 
 		# Contractor Network
 		self.cn = ContractorNetwork()
-		# ctc_deriv = CtcDeriv()
-		# self.cn.add(ctc_deriv, [self.x, self.v])
-		# self.cn.contract()
+		ctc_deriv1, ctc_deriv2 = CtcDeriv(), CtcDeriv()
+		self.cn.add(ctc_deriv1, [self.x, self.v])
+		self.cn.add(ctc_deriv2, [self.v, self.a])
+		self.cn.contract()
 
 	def add_position(self, t, position, accuracy):
-		n = len(t)
+		# Creating a contractor
 		ctc_eval = CtcEval()
+		ctc_eval.enable_time_propag(False)
+
+		n = len(t)
 		for i in range(n):
 			p = IntervalVector([Interval(position[i, 0]), Interval(position[i, 1])])
 			p.inflate(accuracy)
-			self.cn.add(ctc_eval, [Interval(t[i], t[i]+h), p, self.x, self.v])
-			self.cn.contract()
+			ctc_eval.contract(Interval(t[i], t[i]+h), p, self.x, self.v)
+		ctc.deriv.contract(self.x, self.v)
 		
-	
 	def add_velocity(self, t, velocity, accuracy):
+		# Creating a contractor
+		ctc_eval = CtcEval()
+		ctc_eval.enable_time_propag(False)
+
 		n = len(t)
 		for i in range(n):
 			V = IntervalVector([Interval(velocity[i, 0]), Interval(velocity[i, 1])])
 			V.inflate(accuracy)
-			self.v.set(V, t[i])
-			self.cn.contract()
-		self.x.sample(self.v)
-		print(self.x.nb_slices, self.v.nb_slices)
-		ctc_deriv = CtcDeriv()
-		self.cn.add(ctc_deriv, [self.x, self.v])
-		self.cn.contract()
+			ctc_eval.contract(Interval(t[i], t[i]+h), V, self.v, self.a)
+		ctc.deriv.contract(self.v, self.a)
+		ctc.deriv.contract(self.x, self.v)
 
 
 if __name__ == "__main__":
@@ -90,20 +95,10 @@ if __name__ == "__main__":
 	m.cn.contract()
 
 	beginDrawing()
-	fig_map = VIBesFigMap("Map")
+	fig_map = VIBesFigMap("Saturne")
 	fig_map.set_properties(100, 100, 600, 300)
 	fig_map.smooth_tube_drawing(True)
 	fig_map.add_tube(m.x, "x*", 0, 1)
 	fig_map.axis_limits(-2.5,2.5,-0.1,0.1, True)
 	fig_map.show()
-
-	# fig_dist = VIBesFigTube("vx")
-	# fig_dist.set_properties(100, 100, 600, 300)
-	# fig_dist.add_tube(m.v[0], "vx*")
-	# fig_dist.show()
-
-	# fig_dist2 = VIBesFigTube("vy")
-	# fig_dist2.set_properties(100, 100, 600, 300)
-	# fig_dist2.add_tube(m.v[1], "vx*")
-	# fig_dist2.show()
 	endDrawing()
