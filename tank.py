@@ -15,6 +15,7 @@ TODO :
  - Showing the uncertainty on phi
  - Computing the trajectory of the magnetometer using Interval analysis
  - Adding the figure as class variable
+ - Adding some figures : Mapping Coverage, Sled trajectory, Tank trajectory
 """
 
 
