@@ -3,6 +3,8 @@ from pyibex import *
 from tubex_lib import *
 from vibes import vibes
 
+from thickset import *
+
 
 def sub_interval(phi, n):
 	if n <= 1:

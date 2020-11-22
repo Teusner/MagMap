@@ -1,6 +1,7 @@
 import numpy as np
 from vibes import *
 from pyibex import *
+from pyibex.thickset import *
 from tubex_lib import *
 
 from tank import Tank
@@ -11,11 +12,14 @@ import time as time
 class Mapping:
 	def __init__(self, t0, tf, h, L):
 		# Variables
+		self.t0 = t0
+		self.tf = tf
 		self.h = h
 		self.L = L
+		self.measurement_range = 5.0
 
 		# Trajectory Tubes
-		self.tdomain = Interval(t0, tf+h)
+		self.tdomain = Interval(self.t0, self.tf+h)
 		self.x = TubeVector(self.tdomain, self.h, IntervalVector(2))
 		self.v = TubeVector(self.tdomain, self.h, IntervalVector(2, Interval(0)))
 		self.v.inflate(10)
@@ -87,6 +91,28 @@ class Mapping:
 			lb, ub = I.lb(), I.ub()
 			self.phi.set(Interval(lb, ub), i+1)
 
+	def process_coverage(self):
+		# The map
+		self.m_map = IntervalVector(2, Interval(-20, 20))
+		y = Interval(-oo, 0)
+		f_dist = Function("x1", "x2", "p1", "p2", "p3", "(x1-p1)^2+(x2-p2)^2-p3^2")
+
+		# Initialisation
+		p = IntervalVector(3, Interval())
+		p[0] = self.x_m[0](0)
+		p[1] = self.x_m[1](0)
+		p[2] = Interval(self.measurement_range)
+		S_dist = ThickSep_from_function(f_dist, p, y)
+
+		n = int((self.tf-self.t0)/self.h) + 1
+		for i in range(1, n):
+			p = IntervalVector(3, Interval())
+			p[0] = self.x_m[0](i)
+			p[1] = self.x_m[1](i)
+			p[2] = Interval(self.measurement_range)
+			S_dist = S_dist | ThickSep_from_function(f_dist, p, y)
+		return ThickPaving(self.m_map, ThickTest_from_ThickSep(S_dist), 0.1)
+
 
 if __name__ == "__main__":
 	# Time
@@ -95,18 +121,18 @@ if __name__ == "__main__":
 
 	L = 3
 	m = Mapping(t0, tf, h, L)
-	tank = Tank(L=L, h=h, show=True)
+	tank = Tank(L=L, h=h, show=False)
 
 	# Lu = [U], Lg = [p, theta, v]
 	Lu, Lg = [], []
 
 	for t in T:
 		# Command generating
-		# if t % 4 > 2:
+		# if t % 5 > 2.5:
 		# 	U = np.array([[1], [0.7]])
 		# else:
 		# 	U = np.array([[0.7], [1]])
-		U = np.array([[1.0], [0.2*np.sin(t/10)+1]])
+		U = np.array([[1.0], [0.4*np.sin(t/10)+1]])
 
 		tank.step(U)
 		tank.draw()
@@ -149,9 +175,18 @@ if __name__ == "__main__":
 	fig_map2.axis_limits(-2.5,2.5,-0.1,0.1, True)
 	fig_map2.show()
 
-	print(m.phi.slice_tdomain)
 	fig_dist = VIBesFigTube("Distance to the landmark")
 	fig_dist.set_properties(100, 430, 600, 300)
 	fig_dist.add_tube(m.phi, "y*")
 	fig_dist.show()
+
 	endDrawing()
+
+	# Coverage computation
+	vibes.beginDrawing()
+	P = m.process_coverage()
+	vibes.setFigureSize(m.m_map.max_diam(), m.m_map.max_diam())
+	vibes.newFigure("Mapping Coverage")
+	vibes.setFigureProperties({"x": 700, "y": 430, "width": 600, "height": 600})
+	P.visit(ToVibes(figureName="Mapping Coverage", color_map=My_CMap))
+	vibes.endDrawing()
