@@ -4,6 +4,8 @@ from pyibex import *
 from tubex_lib import *
 
 from tank import Tank
+from differential_integration import *
+import time as time
 
 
 class Mapping:
@@ -24,12 +26,16 @@ class Mapping:
 		self.x_m = TubeVector(self.tdomain, self.h, IntervalVector(2))
 		self.phi = Tube(self.tdomain, self.h, Interval(0))
 		self.phi.inflate(np.pi/2)
+		#self.dphi = TubeVector(self.phi)
+		# self.ddphi = TubeVector(self.dphi)
 
 		# Contractor Network
 		self.cn = ContractorNetwork()
 		ctc_deriv = CtcDeriv()
 		self.cn.add(ctc_deriv, [self.x, self.v])
 		self.cn.add(ctc_deriv, [self.v, self.a])
+		#self.cn.add(ctc_deriv, [self.phi, self.dphi])
+		# self.cn.add(ctc_deriv, [self.dphi, self.ddphi])
 		
 		# Magnetometer contractors
 		ctc_polar = CtcPolar()
@@ -69,9 +75,17 @@ class Mapping:
 		ctc.deriv.contract(self.x, self.v)
 	
 	def add_control(self, t, U):
-		# Ctc Picard
+		# Ctc Picard for adding U in order to add informations about theta and v, so about x and y
+		#ctc_picard = CtcPicard(TFunction("<var1>", "<var2...>", "<exp>"))
+
 		# Contracting phi
-		
+		alpha = 0.01		
+		n = len(U)
+		for i in range(n):
+			v, theta = Interval((U[i, 0]+U[i, 1])/2), Interval(U[i, 1] - U[i, 0])
+			I, out = integrate(self.phi(i), alpha, v, theta, self.h)
+			lb, ub = I.lb(), I.ub()
+			self.phi.set(Interval(lb, ub), i+1)
 
 
 if __name__ == "__main__":
@@ -81,22 +95,22 @@ if __name__ == "__main__":
 
 	L = 3
 	m = Mapping(t0, tf, h, L)
-	tank = Tank(L=L, h=h, show=False)
+	tank = Tank(L=L, h=h, show=True)
 
-	# Lu = [U]
-	Lu = []
-
-	# Lg = [p, theta, v]
-	Lg = []
+	# Lu = [U], Lg = [p, theta, v]
+	Lu, Lg = [], []
 
 	for t in T:
 		# Command generating
-		if t % 2 > 1:
-			U = np.array([[1], [0.7]])
-		else:
-			U = np.array([[0.7], [1]])
+		# if t % 4 > 2:
+		# 	U = np.array([[1], [0.7]])
+		# else:
+		# 	U = np.array([[0.7], [1]])
+		U = np.array([[1.0], [0.2*np.sin(t/10)+1]])
 
 		tank.step(U)
+		tank.draw()
+		time.sleep(0.01)
 
 		# Data storage
 		Lu.append(U.flatten())
@@ -114,6 +128,9 @@ if __name__ == "__main__":
 	accuracy_v = 0.03
 	m.add_velocity(T, Lg[:, [3,4]], accuracy_v)
 
+	# Adding control
+	m.add_control(T, Lu)
+
 	# Contracting
 	m.cn.contract()
 
@@ -126,9 +143,15 @@ if __name__ == "__main__":
 	fig_map.show()
 
 	fig_map2 = VIBesFigMap("Magnetometer")
-	fig_map2.set_properties(100, 100, 600, 300)
+	fig_map2.set_properties(700, 100, 600, 300)
 	fig_map2.smooth_tube_drawing(True)
 	fig_map2.add_tube(m.x_m, "x*", 0, 1)
 	fig_map2.axis_limits(-2.5,2.5,-0.1,0.1, True)
 	fig_map2.show()
+
+	print(m.phi.slice_tdomain)
+	fig_dist = VIBesFigTube("Distance to the landmark")
+	fig_dist.set_properties(100, 430, 600, 300)
+	fig_dist.add_tube(m.phi, "y*")
+	fig_dist.show()
 	endDrawing()
