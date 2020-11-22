@@ -7,8 +7,10 @@ from tank import Tank
 
 
 class Mapping:
-	def __init__(self, t0, tf, h):
+	def __init__(self, t0, tf, h, L):
+		# Variables
 		self.h = h
+		self.L = L
 
 		# Trajectory Tubes
 		self.tdomain = Interval(t0, tf+h)
@@ -18,12 +20,28 @@ class Mapping:
 		self.a = TubeVector(self.tdomain, self.h, IntervalVector(2, Interval(0)))
 		self.a.inflate(10)
 
+		# Tube enclosing the magnetometer
+		self.x_m = TubeVector(self.tdomain, self.h, IntervalVector(2))
+		self.phi = Tube(self.tdomain, self.h, Interval(0))
+		self.phi.inflate(np.pi/2)
+
 		# Contractor Network
 		self.cn = ContractorNetwork()
-		ctc_deriv1, ctc_deriv2 = CtcDeriv(), CtcDeriv()
-		self.cn.add(ctc_deriv1, [self.x, self.v])
-		self.cn.add(ctc_deriv2, [self.v, self.a])
-		self.cn.contract()
+		ctc_deriv = CtcDeriv()
+		self.cn.add(ctc_deriv, [self.x, self.v])
+		self.cn.add(ctc_deriv, [self.v, self.a])
+		
+		# Magnetometer contractors
+		ctc_polar = CtcPolar()
+		self.ctc_f = CtcFunction(Function("x1", "x2", "x3", "x1-x2+x3"))
+
+		# Temporary variable
+		self.d = TubeVector(self.tdomain, self.h, IntervalVector(2))
+
+		# Constrains
+		self.cn.add(ctc_polar, [self.d[0], self.d[1], Interval(self.L), self.phi])
+		self.cn.add(self.ctc_f, [self.x_m[0], self.x[0], self.d[0]])
+		self.cn.add(self.ctc_f, [self.x_m[1], self.x[1], self.d[1]])
 
 	def add_position(self, t, position, accuracy):
 		# Creating a contractor
@@ -49,6 +67,11 @@ class Mapping:
 			ctc_eval.contract(Interval(t[i], t[i]+h), V, self.v, self.a)
 		ctc.deriv.contract(self.v, self.a)
 		ctc.deriv.contract(self.x, self.v)
+	
+	def add_control(self, t, U):
+		# Ctc Picard
+		# Contracting phi
+		
 
 
 if __name__ == "__main__":
@@ -56,8 +79,8 @@ if __name__ == "__main__":
 	t0, tf, h = 0, 10.1, 1/20
 	T = np.arange(t0, tf, h)
 
-	m = Mapping(t0, tf, h)
 	L = 3
+	m = Mapping(t0, tf, h, L)
 	tank = Tank(L=L, h=h, show=False)
 
 	# Lu = [U]
@@ -101,4 +124,11 @@ if __name__ == "__main__":
 	fig_map.add_tube(m.x, "x*", 0, 1)
 	fig_map.axis_limits(-2.5,2.5,-0.1,0.1, True)
 	fig_map.show()
+
+	fig_map2 = VIBesFigMap("Magnetometer")
+	fig_map2.set_properties(100, 100, 600, 300)
+	fig_map2.smooth_tube_drawing(True)
+	fig_map2.add_tube(m.x_m, "x*", 0, 1)
+	fig_map2.axis_limits(-2.5,2.5,-0.1,0.1, True)
+	fig_map2.show()
 	endDrawing()
