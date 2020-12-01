@@ -19,17 +19,14 @@ class Mapping:
 		self.measurement_range = 5.0
 
 		# Trajectory Tubes
-		self.tdomain = Interval(self.t0, self.tf+h)
+		self.tdomain = Interval(self.t0, self.tf+2*h)
 		self.x = TubeVector(self.tdomain, self.h, IntervalVector(2))
-		self.v = TubeVector(self.tdomain, self.h, IntervalVector(2, Interval(0)))
-		self.v.inflate(10)
-		self.a = TubeVector(self.tdomain, self.h, IntervalVector(2, Interval(0)))
-		self.a.inflate(10)
+		self.v = TubeVector(self.tdomain, self.h, IntervalVector(2, Interval(-100, 100)))
+		self.a = TubeVector(self.tdomain, self.h, IntervalVector(2, Interval(-100, 100)))
 
 		# Tube enclosing the magnetometer
 		self.x_m = TubeVector(self.tdomain, self.h, IntervalVector(2))
-		self.phi = Tube(self.tdomain, self.h, Interval(0))
-		self.phi.inflate(np.pi/2)
+		self.phi = Tube(self.tdomain, self.h, Interval(-np.pi/2, np.pi/2))
 
 		# Contractor Network
 		self.cn = ContractorNetwork()
@@ -83,7 +80,7 @@ class Mapping:
 
 	def process_coverage(self):
 		# The map
-		self.m_map = IntervalVector(2, Interval(-20, 20))
+		self.m_map = IntervalVector(2, Interval(-35, 35))
 		y = Interval(-oo, 0)
 		f_dist = Function("x1", "x2", "p1", "p2", "p3", "(x1-p1)^2+(x2-p2)^2-p3^2")
 
@@ -105,44 +102,34 @@ class Mapping:
 
 
 if __name__ == "__main__":
-	# Time
-	t0, tf, h = 0, 10.15, 1/20
-	T = np.arange(t0, tf, h)
+
+	# Loading control and measurements data
+	Su = np.load("./data/control.npy")
+	Sg = np.load("./data/gnss.npy")
+	St = np.load("./data/angle.npy")
+	Sv = np.load("./data/velocity.npy")
+
+	# Getting time parameters
+	T = Su[:, 0].T
+	t0, tf, h = T[0], T[-1], T[1]-T[0]
 
 	L = 3
 	m = Mapping(t0, tf, h, L)
 	tank = Tank(L=L, h=h, show=False)
-
-	# Lu = [U], Lg = [p, theta, v]
-	Lu, Lg = [], []
-
-	for t in T:
-		# Command generating
-		U = np.array([[1.0], [1.0]])
-
-		tank.step(U)
-
-		# Data storage
-		Lu.append(U.flatten())
-		Lg.append(tank.g(U).flatten())
-	
-	Lu, Lg = np.asarray(Lu), np.asarray(Lg)
 	
 	# Benchmark
 	t_bench = time.time()
 
 	# Adding positions in m
 	accuracy_p = 0.5
-	gnss = np.vstack((np.unique(Lg[:,0]), np.unique(Lg[:,1]))).T
-	t_gnss = T[np.nonzero(np.r_[1, np.diff(Lg[:,0])[:-1]])]
-	m.add_position(t_gnss, gnss, accuracy_p)
+	m.add_position(Sg[:, 0].T, Sg[:, 1:], 3*accuracy_p)
 
 	# Adding velocities in m
 	accuracy_v = 0.03
-	m.add_velocity(T, Lg[:, [3,4]], accuracy_v)
+	m.add_velocity(Sv[:, 0].T, Sv[:, 1:], 3*accuracy_v)
 
 	# Adding control
-	m.add_control(T, Lu)
+	m.add_control(Su[:, 0].T, Su[:, 1:])
 
 	print("Constrains adding time {:.4} s".format(time.time()-t_bench))
 

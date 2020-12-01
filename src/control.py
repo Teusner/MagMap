@@ -6,7 +6,7 @@ import time
 
 class Controller:
 	def __init__(self, t0=0, tf=128, h=0.1):
-		self.t0, self.tf, self.h = 0, 128, 0.1
+		self.t0, self.tf, self.h = t0, tf, h
 		self.T = np.arange(self.t0, self.tf, self.h)
 
 		self.t = Tank()
