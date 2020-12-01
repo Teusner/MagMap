@@ -18,8 +18,10 @@ class Controller:
 		self.ddx = -0.05*4*np.sin(2*self.T/20)
 		self.ddy = -0.05*9*np.sin(3*2*self.T/20)
 
-		self.Su = np.empty(shape=(0, 2))
-		self.Sg = np.empty(shape=(0, 5))
+		self.Su = []
+		self.Sg = []
+		self.Sv = []
+		self.St = []
 
 	def show_trajectory(self):
 		plt.plot(self.x, self.y)
@@ -28,7 +30,7 @@ class Controller:
 
 	def process_data(self):
 		z = 1.
-		for xi, yi, dxi, dyi, ddxi, ddyi in zip(self.x, self.y, self.dx, self.dy, self.ddx, self.ddy):
+		for ti, xi, yi, dxi, dyi, ddxi, ddyi in zip(self.T, self.x, self.y, self.dx, self.dy, self.ddx, self.ddy):
 			xt, yt, theta = self.t.X[0, 0], self.t.X[1, 0], self.t.X[2, 0]
 			A = np.array([[np.cos(theta), -z*np.sin(theta)], [np.sin(theta), z*np.cos(theta)]])
 			v = np.array([[xi-xt + 2*(dxi - z*np.cos(theta)) + ddxi], [yi - yt + 2*(dyi - z*np.sin(theta)) + ddyi]])
@@ -39,15 +41,29 @@ class Controller:
 			A = np.array([[0.5, 0.5], [-1, 1]])
 			B = np.array([[z], c[1]])
 			U = np.linalg.solve(A, B)
-			self.Su = np.vstack((self.Su, U.flatten()))
+			self.Su.append(U.flatten())
 			self.t.step(U)
-			self.Sg = np.vstack((self.Sg, self.t.g(U).flatten()))
+
+			g = self.t.g(U)
+
+			self.St.append(np.hstack((np.array([ti]), g[2, 0])))
+			self.Sv.append(np.hstack((np.array([ti]), g[3:, 0])))
+
+			if len(self.Sg) == 0:
+				self.Sg.append(np.hstack((np.array([ti]),g[:2, 0])))
+			else:
+				if np.linalg.norm(self.Sg[-1][1:] - g[:2, 0]) > 0.1:
+					self.Sg.append(np.hstack((np.array([ti]), g[:2, 0])))
 			self.t.draw()
-		return self.Su, self.Sg
+		return np.asarray(self.Su), np.asarray(self.Sg), np.asarray(self.St), np.asarray(self.Sv)
 
 
 if __name__ == "__main__":
 	c = Controller()
-	Su, Sg = c.process_data()
-	np.savetxt("control.txt", Su)
-	np.savetxt("observations.txt", Sg)
+	Su, Sg, St, Sv = c.process_data()
+	
+	# Saving data
+	np.save("./data/control.npy", Su)
+	np.save("./data/gnss.npy", Sg)
+	np.save("./data/angle.npy", St)
+	np.save("./data/velocity.npy", Sv)
