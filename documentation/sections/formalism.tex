@@ -1,0 +1,8 @@
+\section*{Formalism}
+    The system evolve on a field which should be mapped with the magnetometer. It follows the following state equations :
+    \begin{empheq}[left=\empheqlbrace]{align}
+        \dot{x} &= f(x(t), u(t)) & (evolution\ equation)\\
+        y^i &= g(x(t_i)) & (observation\ equation)
+    \end{empheq}
+
+    where $x \in \mathbb{R}^4$ is the state of the robot, $u \in \mathbb{R}^2$ is the input of the system. As $x$ and $u$ continuously evolve with time, we define the trajectories of this system denoted by $x(\cdot)$ and $u(\cdot)$. We could also define tubes enclosing these trajectories at every time denoted by $\forall t, [x](t)$ and $\forall t, [u](t)$.
