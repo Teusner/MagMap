@@ -1,7 +1,3 @@
-import sys
-from pathlib import Path
-sys.path.append(str(Path().resolve()))
-
 from tank import Tank
 import numpy as np
 import matplotlib.pyplot as plt
