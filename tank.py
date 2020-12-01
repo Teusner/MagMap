@@ -131,33 +131,33 @@ class Tank():
 		v = (U[0, 0] + U[1, 0])/2 * np.array([[np.cos(self.X[2, 0])], [np.sin(self.X[2, 0])]]) + self.sigma_v * (np.random.random_sample((2, 1)) - 0.5)
 
 		''' IX estimation according to the IMU and GPS'''
-		# Interval enclosing the position
-		self.Ip = IntervalVector([Interval(self.p[0,0]), Interval(self.p[1,0])])
-		self.Ip.inflate(self.sigma_gnss)
+		# # Interval enclosing the position
+		# self.Ip = IntervalVector([Interval(self.p[0,0]), Interval(self.p[1,0])])
+		# self.Ip.inflate(self.sigma_gnss)
 
-		# Interval enclosing theta
-		self.Itheta=Interval(theta)
-		self.Itheta.inflate(self.sigma_theta)
+		# # Interval enclosing theta
+		# self.Itheta=Interval(theta)
+		# self.Itheta.inflate(self.sigma_theta)
 
-		# Interval enclosing v
-		self.Iv = IntervalVector([Interval(v[0,0]), Interval(v[1,0])])
-		self.Iv.inflate(3*self.sigma_gnss)
+		# # Interval enclosing v
+		# self.Iv = IntervalVector([Interval(v[0,0]), Interval(v[1,0])])
+		# self.Iv.inflate(3*self.sigma_gnss)
 
-		ctc_deriv = CtcDeriv()
-		tdomain = Interval(0, self.h)
-		I=IntervalVector(2,Interval(-oo,oo))
-		tx = TubeVector(tdomain, self.h/2, I)
-		tv = TubeVector(tdomain, self.h/2, self.Iv)
-		tx.set(self.IX, Interval(0, self.h/2))
+		# ctc_deriv = CtcDeriv()
+		# tdomain = Interval(0, self.h)
+		# I=IntervalVector(2,Interval(-oo,oo))
+		# tx = TubeVector(tdomain, self.h/2, I)
+		# tv = TubeVector(tdomain, self.h/2, self.Iv)
+		# tx.set(self.IX, Interval(0, self.h/2))
 
-		# Contractor network
-		cn = ContractorNetwork()
-		cn.add(ctc_deriv,[tx,tv])
-		cn.contract()
-		if update:
-			self.IX=tx(1)&self.Ip
-		else :
-			self.IX=tx(1)
+		# # Contractor network
+		# cn = ContractorNetwork()
+		# cn.add(ctc_deriv,[tx,tv])
+		# cn.contract()
+		# if update:
+		# 	self.IX=tx(1)&self.Ip
+		# else :
+		# 	self.IX=tx(1)
 
 		return np.vstack((self.p, theta, v))
 

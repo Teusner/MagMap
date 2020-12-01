@@ -30,16 +30,12 @@ class Mapping:
 		self.x_m = TubeVector(self.tdomain, self.h, IntervalVector(2))
 		self.phi = Tube(self.tdomain, self.h, Interval(0))
 		self.phi.inflate(np.pi/2)
-		#self.dphi = TubeVector(self.phi)
-		# self.ddphi = TubeVector(self.dphi)
 
 		# Contractor Network
 		self.cn = ContractorNetwork()
 		ctc_deriv = CtcDeriv()
 		self.cn.add(ctc_deriv, [self.x, self.v])
 		self.cn.add(ctc_deriv, [self.v, self.a])
-		#self.cn.add(ctc_deriv, [self.phi, self.dphi])
-		# self.cn.add(ctc_deriv, [self.dphi, self.ddphi])
 		
 		# Magnetometer contractors
 		ctc_polar = CtcPolar()
@@ -63,7 +59,6 @@ class Mapping:
 			p = IntervalVector([Interval(position[i, 0]), Interval(position[i, 1])])
 			p.inflate(accuracy)
 			ctc_eval.contract(Interval(t[i], t[i]+h), p, self.x, self.v)
-		ctc.deriv.contract(self.x, self.v)
 		
 	def add_velocity(self, t, velocity, accuracy):
 		# Creating a contractor
@@ -75,13 +70,8 @@ class Mapping:
 			V = IntervalVector([Interval(velocity[i, 0]), Interval(velocity[i, 1])])
 			V.inflate(accuracy)
 			ctc_eval.contract(Interval(t[i], t[i]+h), V, self.v, self.a)
-		ctc.deriv.contract(self.v, self.a)
-		ctc.deriv.contract(self.x, self.v)
 	
 	def add_control(self, t, U):
-		# Ctc Picard for adding U in order to add informations about theta and v, so about x and y
-		#ctc_picard = CtcPicard(TFunction("<var1>", "<var2...>", "<exp>"))
-
 		# Contracting phi
 		alpha = 0.01		
 		n = len(U)
@@ -116,7 +106,7 @@ class Mapping:
 
 if __name__ == "__main__":
 	# Time
-	t0, tf, h = 0, 10.1, 1/20
+	t0, tf, h = 0, 10.15, 1/20
 	T = np.arange(t0, tf, h)
 
 	L = 3
@@ -128,15 +118,9 @@ if __name__ == "__main__":
 
 	for t in T:
 		# Command generating
-		# if t % 5 > 2.5:
-		# 	U = np.array([[1], [0.7]])
-		# else:
-		# 	U = np.array([[0.7], [1]])
-		U = np.array([[1.0], [0.4*np.sin(t/10)+1]])
+		U = np.array([[1.0], [1.0]])
 
 		tank.step(U)
-		tank.draw()
-		time.sleep(0.01)
 
 		# Data storage
 		Lu.append(U.flatten())
@@ -158,7 +142,7 @@ if __name__ == "__main__":
 	m.add_control(T, Lu)
 
 	# Contracting
-	m.cn.contract()
+	m.cn.contract(True)
 
 	beginDrawing()
 	fig_map = VIBesFigMap("Saturne")
@@ -175,7 +159,7 @@ if __name__ == "__main__":
 	fig_map2.axis_limits(-2.5,2.5,-0.1,0.1, True)
 	fig_map2.show()
 
-	fig_dist = VIBesFigTube("Distance to the landmark")
+	fig_dist = VIBesFigTube("Phi angle")
 	fig_dist.set_properties(100, 430, 600, 300)
 	fig_dist.add_tube(m.phi, "y*")
 	fig_dist.show()
