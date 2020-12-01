@@ -41,7 +41,7 @@ class Controller:
 			A = np.array([[0.5, 0.5], [-1, 1]])
 			B = np.array([[z], c[1]])
 			U = np.linalg.solve(A, B)
-			self.Su.append(U.flatten())
+			self.Su.append(np.hstack((np.array([ti]), U.flatten())))
 			self.t.step(U)
 
 			g = self.t.g(U)
