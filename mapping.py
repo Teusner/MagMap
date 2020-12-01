@@ -58,7 +58,7 @@ class Mapping:
 		for i in range(n):
 			p = IntervalVector([Interval(position[i, 0]), Interval(position[i, 1])])
 			p.inflate(accuracy)
-			ctc_eval.contract(Interval(t[i], t[i]+self.h), p, self.x, self.v)
+			ctc_eval.contract(Interval(t[i]), p, self.x, self.v)
 		
 	def add_velocity(self, t, velocity, accuracy):
 		# Creating a contractor
@@ -69,7 +69,7 @@ class Mapping:
 		for i in range(n):
 			V = IntervalVector([Interval(velocity[i, 0]), Interval(velocity[i, 1])])
 			V.inflate(accuracy)
-			ctc_eval.contract(Interval(t[i], t[i]+self.h), V, self.v, self.a)
+			ctc_eval.contract(Interval(t[i]), V, self.v, self.a)
 	
 	def add_control(self, t, U):
 		# Contracting phi
