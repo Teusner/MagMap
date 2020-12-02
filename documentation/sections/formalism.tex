@@ -1,10 +1,13 @@
 \section*{Formalism}
     \subsection{Mathematical context}
-        The system evolve on a field which should be mapped with the magnetometer. It follows the following state equations :
-        \begin{empheq}[left=\empheqlbrace]{align}
-            \dot{\mathbf{x}} &= f(\mathbf{x}(t), \mathbf{u}(t)) & (evolution\ equation)\\
-            \mathbf{y}^i &= g(\mathbf{x}(t_i)) & (observation\ equation)
-        \end{empheq}
+        The system evolve on a field which should be mapped with the magnetometer. It follows the evolution describe by \textsc{Equation}~\ref{eqn:state_eqn}.
+        \begin{equation}
+            \label{eqn:state_eqn}
+            \begin{cases}
+                \dot{\mathbf{x}} = f(\mathbf{x}(t), \mathbf{u}(t)) &(evolution\ equation)\\
+                \mathbf{y}^i = g(\mathbf{x}(t_i)) &(observation\ equation)
+            \end{cases}
+        \end{equation}
 
         where $\mathbf{x}$ is the state of the robot, $\mathbf{u}$ is the input of the system. As $\mathbf{x}$ and $\mathbf{u}$ continuously evolve with time, we define the trajectories of this system denoted by $\mathbf{x}(\cdot)$ and $\mathbf{u}(\cdot)$. We could also define tubes enclosing these trajectories at every time denoted by $\forall t, [\mathbf{x}](t)$ and $\forall t, [\mathbf{u}](t)$. Measurements are available at each $t_i$ and are denoted by $\mathbf{y}^i$. Therefore it is assumed that $\forall t, \mathbf{u}(t) \in [\mathbf{u}](t)$ and that for each measurements $\mathbf{y}^i \in [\mathbf{y}^i]$. This last conditions means that each measurement is bounded which is an assumption made frequently when we are dealing with constrain programming.
 
