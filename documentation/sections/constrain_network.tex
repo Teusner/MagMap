@@ -1,3 +1,19 @@
 \section*{Constrain Network}
     \subsection{Decomposition}
-        
+        These equations could be broken down into the following set of elementary constrains :
+
+        \begin{equation}
+            \label{eqn:constrains}
+            \begin{cases}
+                (\mathit{i}) & \mathbf{v}(\cdot) = f(\mathbf{x}(\cdot), \mathbf{u}(\cdot)) \\
+                (\mathit{ii}) & \dot{\mathbf{x}}(\cdot) = \mathbf{v}(\cdot) \\
+                (\mathit{iii}) & \dot{\mathbf{v}}(\cdot) = \mathbf{a}(\cdot) \\
+                (\mathit{iv}) &  \mathbf{d} (\cdot)= \mathbf{x}_{1,2}(\cdot) - \mathbf{x_m}(\cdot) \\
+                (\mathit{v}) & \mathbf{t} = \mathbf{x}_3+\mathbf{x}_4 \\
+                (\mathit{vi}) & \mathcal{L}_{polar}\left(\mathbf{d}(\cdot),\ [L],\ \mathbf{t}\right) \\
+                (\mathit{vii}) & \mathcal{L}_{eval}\left(t_i,\ [\textbf{y}_{1,2}],\ \mathbf{x}_{1,2}(t_i),\ \mathbf{v}_{1,2}(t_i)\right) \\
+                (\mathit{viii}) & \mathcal{L}_{eval}\left(t_j,\ [\textbf{y}_{4,5}],\ \mathbf{v}_{1,2}(t_j),\ \mathbf{a}_{1,2}(t_j)\right)
+            \end{cases}
+        \end{equation}
+
+        These constrains involve intermediate variables introduced for ease of decomposition: $a \in \mathbb{R}$, tubes $\mathbf{v}(\cdot) \in \mathbb{R} \rightarrow \mathbb{R}^4$ and $\mathbf{d}(\cdot) \in \mathbb{R} \rightarrow \mathbb{R}^2$

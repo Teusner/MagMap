@@ -122,11 +122,11 @@ if __name__ == "__main__":
 
 	# Adding positions in m
 	accuracy_p = 0.5
-	m.add_position(Sg[:, 0].T, Sg[:, 1:], 3*accuracy_p)
+	m.add_position(Sg[:, 0].T, Sg[:, 1:], accuracy_p)
 
 	# Adding velocities in m
 	accuracy_v = 0.03
-	m.add_velocity(Sv[:, 0].T, Sv[:, 1:], 3*accuracy_v)
+	m.add_velocity(Sv[:, 0].T, Sv[:, 1:], accuracy_v)
 
 	# Adding control
 	m.add_control(Su[:, 0].T, Su[:, 1:])

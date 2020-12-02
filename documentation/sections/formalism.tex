@@ -13,13 +13,14 @@
 
     \subsection{State equations}
         The system is composed of a vehicle that will drag a sledge that transports a magnetometer. The towing vehicle is a tank type vehicle, and the sled is attached to it with a rope. Assuming that the rope is constantly under tension, we are able to find the equations describing the dynamics of the system.
-
-        \begin{empheq}[left={f(\mathbf{x}(t), \mathbf{u}(t)) =}\empheqlbrace]{align}
-            \dot{x_1} &=\ \tfrac{u_1 + u_2}{2}.cos(x_3) \label{eq:x}\\
-            \dot{x_2} &=\ \tfrac{u_1 + u_2}{2}.sin(x_3) \label{eq:y}\\
-            \dot{x_3} &=\ u_2 - u_1 \label{eq:theta}\\
-            \dot{x_4} &=\ - \tfrac{u_1 + u_2}{2}.sin(x_4) - \dot{x_3} \label{eq:phi}
-        \end{empheq}
+        \begin{subequations}
+            \begin{empheq}[left={f(\mathbf{x}(t), \mathbf{u}(t))=\empheqlbrace}]{align}
+                \dot{\mathbf{x}}_1 & = \tfrac{\mathbf{u}_1 + \mathbf{u}_2}{2}.cos(\mathbf{x}_3) \\
+                \dot{\mathbf{x}}_2 & = \tfrac{\mathbf{u}_1 + \mathbf{u}_2}{2}.sin(\mathbf{x}_3) \\
+                \dot{\mathbf{x}}_3 & = \mathbf{u}_2-\mathbf{u}_1 \\
+                \dot{\mathbf{x}}_4 & = -\tfrac{\mathbf{u}_1 + \mathbf{u}_2}{2}.sin(\mathbf{x}_4) - \dot{\mathbf{x}}_3
+              \end{empheq}
+        \end{subequations}
 
         Here $x_1$, $x_2$ and $x_3$ are respectively the abscissa, the ordinate and the heading of the trailing robot, $x_4$ is the angle of the sled to the tractor vehicle, as shown in \textsc{Figure}~\ref{fig:state_variables}. We can also notice that $\tfrac{u_1 + u_2}{2}$ is related to the speed control of the char robot and that $u_2-u_1$ is the angular acceleration control.
 
