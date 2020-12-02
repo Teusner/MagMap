@@ -16,6 +16,13 @@ TODO :
  - Computing the trajectory of the magnetometer using Interval analysis
  - Adding the figure as class variable
  - Adding some figures : Mapping Coverage, Sled trajectory, Tank trajectory
+ - Storage of the trajectories of the robot and the sled in a Trajectory object :
+	y = TrajectoryVector(2)
+	for t in np.arange(0., 10., 0.6):
+		y.set([np.cos(t),np.sin(t)], t)
+ - Better import of vibes
+ - Better import of pyibex and of tubex_lib
+ - Set the figure windows depending on the domain of the trajectories and refreshing it
 """
 
 
