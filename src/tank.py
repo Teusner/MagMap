@@ -1,5 +1,5 @@
 import numpy as np
-from vibes import vibes
+from vibes import *
 import time
 from itertools import cycle
 from pyibex import *
@@ -23,6 +23,10 @@ TODO :
  - Better import of vibes
  - Better import of pyibex and of tubex_lib
  - Set the figure windows depending on the domain of the trajectories and refreshing it
+ - Improvements :
+	draw other vehicles with trajectories
+	add groups in VIBesFigMap
+	add some drawing functions like draw_vehicle or draw_triangle
 """
 
 
@@ -50,10 +54,6 @@ class Tank():
 		# Measurement iterator
 		self.gnss_measurement = cycle([k==0 for k in range(20)])
 
-		#Box enclosing the position
-		self.IX=IntervalVector([Interval(X[0,0]),Interval(X[1,0])])
-		self.Ip=self.IX
-
 		# State representation
 		self.X = X
 		self.Y = self.g(np.array([[0], [0]]))
@@ -66,6 +66,13 @@ class Tank():
 		# Path of the vehicle
 		self.path = X[:2]
 		self.anchor_point = self.X[:2] - 0.3*np.array([[np.cos(self.X[2, 0])], [np.sin(self.X[2, 0])]])
+
+		# Trajectory
+		self.t = 0
+		self.robot_trajectory = TrajectoryVector(2)
+		self.magnetometer_trajectory = TrajectoryVector(2)
+		self.robot_trajectory.set(self.X[:2].flatten().tolist(), self.t)
+		self.magnetometer_trajectory.set(self.M[:2].flatten().tolist(), self.t)
 		
 		# Initialize VIBes
 		if show:
@@ -130,46 +137,15 @@ class Tank():
 		self.sigma_gnss = 0.5
 		self.sigma_v = 0.03
 
-		update=False
 		if next(self.gnss_measurement):
 			self.p = self.X[:2] + self.sigma_gnss * (np.random.random_sample((2, 1)) - 0.5)
-			update=True
 		theta = self.X[2] + self.sigma_theta * (np.random.random() - 0.5)
 		v = (U[0, 0] + U[1, 0])/2 * np.array([[np.cos(self.X[2, 0])], [np.sin(self.X[2, 0])]]) + self.sigma_v * (np.random.random_sample((2, 1)) - 0.5)
-
-		''' IX estimation according to the IMU and GPS'''
-		# # Interval enclosing the position
-		# self.Ip = IntervalVector([Interval(self.p[0,0]), Interval(self.p[1,0])])
-		# self.Ip.inflate(self.sigma_gnss)
-
-		# # Interval enclosing theta
-		# self.Itheta=Interval(theta)
-		# self.Itheta.inflate(self.sigma_theta)
-
-		# # Interval enclosing v
-		# self.Iv = IntervalVector([Interval(v[0,0]), Interval(v[1,0])])
-		# self.Iv.inflate(3*self.sigma_gnss)
-
-		# ctc_deriv = CtcDeriv()
-		# tdomain = Interval(0, self.h)
-		# I=IntervalVector(2,Interval(-oo,oo))
-		# tx = TubeVector(tdomain, self.h/2, I)
-		# tv = TubeVector(tdomain, self.h/2, self.Iv)
-		# tx.set(self.IX, Interval(0, self.h/2))
-
-		# # Contractor network
-		# cn = ContractorNetwork()
-		# cn.add(ctc_deriv,[tx,tv])
-		# cn.contract()
-		# if update:
-		# 	self.IX=tx(1)&self.Ip
-		# else :
-		# 	self.IX=tx(1)
-
 		return np.vstack((self.p, theta, v))
 
 	def step(self, U):
 		# Processing the new state
+		self.t += h
 		self.X += self.h * self.f(U)
 		self.Y = self.g(U)
 
@@ -178,6 +154,8 @@ class Tank():
 
 		# Updating the path of the vehicle
 		self.path = np.append(self.path, self.X[:2], axis=1)
+		self.robot_trajectory.set(self.X[:2].flatten().tolist(), self.t)
+		self.magnetometer_trajectory.set(self.M[:2].flatten().tolist(), self.t)
 
 		# Rope processing
 		rope = self.anchor_point - self.M
@@ -213,6 +191,14 @@ class Tank():
 		vibes.newGroup("vehicle")
 		vibes.newGroup("magnetometer")
 
+		# beginDrawing()
+		# self.figure = VIBesFigMap("MagMap_Trajectory")
+		# self.figure.set_properties(100, 100, 600, 600)
+		# self.figure.add_trajectory(self.robot_trajectory, "*x", 0, 1, "#2980b9")
+		# self.figure.add_trajectory(self.magnetometer_trajectory, "*xm", 0, 1, "#8e44ad")
+		# self.figure.show(0.01)
+
+
 	def draw(self):
 		"""
 		Draw the scene with the vehicle, the magnetometer and the rope.
@@ -225,7 +211,6 @@ class Tank():
 		vibes.drawVehicle(self.X[0, 0], self.X[1, 0], self.X[2, 0]*180/np.pi, 1.0, color="black", figure="MagMap", group="vehicle")
 		vibes.drawCircle(self.anchor_point[0, 0], self.anchor_point[1, 0], 0.08, color="black[grey]", group="vehicle")
 
-		vibes.drawBox(self.IX[0].lb(),self.IX[0].ub(),self.IX[1].lb(),self.IX[1].ub(), group="vehicle")
 		vibes.drawPoint(self.Y[0, 0], self.Y[1, 0], radius=3, color="#AAAAAA[#77116677]", group="estimatedState")
 		
 		# Draw the path
@@ -236,6 +221,11 @@ class Tank():
 		vibes.clearGroup("magnetometer")
 		vibes.drawLine([self.anchor_point[:, 0].tolist(), self.M[:, 0].tolist()], color=rope_color, group="magnetometer")
 		vibes.drawCircle(self.M[0, 0], self.M[1, 0], 0.2, color="black[darkCyan]", group="magnetometer")
+
+		# self.figure.draw_polygon([self.X[0, 0], self.X[1, 0], self.X[2, 0]*180/np.pi])
+		# self.figure.draw_circle(self.anchor_point[0, 0], self.anchor_point[1, 0], 0.08, color="black[grey]")
+
+		# self.figure.show(0.01)
 
 
 if __name__=="__main__":
