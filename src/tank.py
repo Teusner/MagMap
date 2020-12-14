@@ -145,7 +145,7 @@ class Tank():
 
 	def step(self, U):
 		# Processing the new state
-		self.t += h
+		self.t += self.h
 		self.X += self.h * self.f(U)
 		self.Y = self.g(U)
 
@@ -224,7 +224,6 @@ class Tank():
 
 		# self.figure.draw_polygon([self.X[0, 0], self.X[1, 0], self.X[2, 0]*180/np.pi])
 		# self.figure.draw_circle(self.anchor_point[0, 0], self.anchor_point[1, 0], 0.08, color="black[grey]")
-
 		# self.figure.show(0.01)
 
 
