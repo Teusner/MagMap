@@ -1,0 +1,42 @@
+\documentclass[french]{beamer}
+
+\usetheme{metropolis}
+\usecolortheme{metropolis}
+\uselanguage{French}
+\languagepath{French}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{babel}
+\usepackage{pgf}
+
+\usepackage{pgfpages}
+%\setbeameroption{show notes on second screen=right} %hide notes
+
+%\usepackage[sfdefault]{FiraSans}
+\usepackage{scrextend}
+\usepackage{eqnarray,amsmath}
+\usepackage{tikz}
+
+\title{MagMap : Sled localisation and Trajectories}
+\date{\vfill \centering\today}
+\author{
+    \centering    
+    Jules BERHAULT, Quentin BRATEAU,\\Paul-Antoine LE TOLGUENEC, Gwendal PRISER
+}
+\institute{
+    \centering
+    \includegraphics[width=2.9cm]{images/logo/logo_ensta.jpg}
+}
+
+\begin{document}
+    \maketitle
+
+    \changefontsizes{10pt}
+    \setbeamerfont{caption}{size=\footnotesize}
+
+    \section{Présentation}
+        \input{frames/introduction.tex}
+
+    \maketitle
+
+\end{document}
