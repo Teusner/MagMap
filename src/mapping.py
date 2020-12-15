@@ -98,8 +98,7 @@ class Mapping:
 	def add_control(self, t, U):
 		trajectory_u = TrajectoryVector(dict(zip(t, U.tolist())))
 		trajectory_u.truncate_tdomain(self.tdomain)
-		self.u[0] &= trajectory_u[0]
-		self.u[1] &= trajectory_u[1]
+		self.u &= trajectory_u
 
 	def process_coverage(self):
 		# The map
