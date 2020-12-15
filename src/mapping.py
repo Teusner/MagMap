@@ -80,7 +80,7 @@ class Mapping:
 	def add_heading(self, t, heading, accuracy):
 		trajectory_h = Trajectory(dict(zip(t, heading)))
 		trajectory_h.truncate_tdomain(self.tdomain)
-		self.x[2] &= trajectory_h #Tube(trajectory_h, self.h)
+		self.x[2] &= trajectory_h
 		self.x[2].inflate(accuracy)
 			
 	def add_velocity(self, t, velocity, accuracy):
@@ -88,8 +88,8 @@ class Mapping:
 		trajectory_v.truncate_tdomain(self.tdomain)
 
 		# Storage of the velocity in the tube
-		self.v[0] &= trajectory_v[0] #Tube(trajectory_v[0], self.h)
-		self.v[1] &= trajectory_v[1] #Tube(trajectory_v[1], self.h)
+		self.v[0] &= trajectory_v[0]
+		self.v[1] &= trajectory_v[1]
 
 		# Inflating these tube with accuracy
 		self.v[0].inflate(accuracy)
@@ -98,7 +98,8 @@ class Mapping:
 	def add_control(self, t, U):
 		trajectory_u = TrajectoryVector(dict(zip(t, U.tolist())))
 		trajectory_u.truncate_tdomain(self.tdomain)
-		self.u &= trajectory_u #TubeVector(trajectory_u, self.h)
+		self.u[0] &= trajectory_u[0]
+		self.u[1] &= trajectory_u[1]
 
 	def process_coverage(self):
 		# The map
@@ -142,6 +143,9 @@ if __name__ == "__main__":
 	# Benchmark
 	t_bench = time.time()
 
+	# Adding evolution function
+	m.add_f()
+
 	# Adding positions in m
 	accuracy_p = 0.5
 	m.add_position(Sg[:, 0].T, Sg[:, 1:], accuracy_p)
@@ -156,9 +160,6 @@ if __name__ == "__main__":
 
 	# Adding control
 	m.add_control(Su[:, 0].T, Su[:, 1:])
-
-	# Adding evolution funciton
-	m.add_f()
 
 	print("Constrains adding time {:.4} s".format(time.time()-t_bench))
 
