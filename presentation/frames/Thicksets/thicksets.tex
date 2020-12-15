@@ -1,0 +1,51 @@
+\begin{frame}{Thicksets}
+    \begin{columns}
+
+        \begin{column}{0.5\textwidth}
+            \textbf{Thicksets}
+            $$\forall \llbracket\mathbb{X}\rrbracket \in \mathbb{R}^n, \quad \exists (\mathbb{X}^\subset, \mathbb{X}^\supset) \in (\mathbb{R}^n)^2 :$$
+            $$\llbracket\mathbb{X}\rrbracket = \llbracket\mathbb{X}^\subset, \mathbb{X}^\supset\rrbracket$$
+
+            \vfill
+            \textbf{Vocabulary} \\
+            \vspace{0.2cm}
+            $\mathbb{X}^\subset$ is the \textit{subset bound} and correspond to the red area, \\
+            \vspace{0.2cm}
+            $\mathbb{X}^\supset$ is the \textit{supset bound} and correspond to the orange area.
+
+        \end{column}
+
+        \begin{column}{0.5\textwidth}
+            \begin{figure}
+                \centering
+                \begin{tikzpicture}[scale=0.8]
+                    \tikzstyle{subset}=[fill=myred]
+                    \tikzstyle{supset}=[fill=myorange]
+
+                    \fill[mygreen] (-3,-3) rectangle (3,3);
+                    
+                    % Supset
+                    \fill[supset] (0.5,0.5) circle (2cm);
+                    \fill[supset] (-0.5,-0.5) circle (2cm);
+                    \fill[supset] (0.5,-0.5) circle (2cm);
+                    \fill[supset] (-0.5,0.5) circle (2cm);
+                    \fill[supset] (-0.5,2.5) rectangle (0.5,-2.5);
+                    \fill[supset] (-2.5,-0.5) rectangle (2.5,0.5);
+
+                    % Real measurement
+                    \draw[mygrey,line width=0.35mm](-0.25,-0.4) circle (2cm);
+
+                    % Subset
+                    \clip (0.5,0.5) circle (2cm);
+                    \clip (-0.5,-0.5) circle (2cm);
+                    \clip (0.5,-0.5) circle (2cm);
+                    \fill[subset] (-0.5,0.5) circle (2cm);
+
+                    \fill[mygrey](-0.5,-0.5) rectangle (0.5,0.5);
+
+                \end{tikzpicture}
+                \caption{Subset Supset}
+            \end{figure}
+        \end{column}
+    \end{columns}
+\end{frame}
