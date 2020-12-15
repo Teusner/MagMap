@@ -80,25 +80,39 @@ class Mapping:
 	def add_heading(self, t, heading, accuracy):
 		trajectory_h = Trajectory(dict(zip(t, heading)))
 		trajectory_h.truncate_tdomain(self.tdomain)
-		self.x[2] &= trajectory_h
-		self.x[2].inflate(accuracy)
+		self.h_t = Tube(trajectory_h, self.h)
+		self.h_t.inflate(accuracy)
+
+		ctc_equal = CtcFunction(Function("a", "b", "a-b"))
+
+		# Storage of the velocity in the tube
+		self.cn.add(ctc_equal, [self.x[2], self.h_t])
 			
 	def add_velocity(self, t, velocity, accuracy):
 		trajectory_v = TrajectoryVector(dict(zip(t, velocity.tolist())))
 		trajectory_v.truncate_tdomain(self.tdomain)
 
-		# Storage of the velocity in the tube
-		self.v[0] &= trajectory_v[0]
-		self.v[1] &= trajectory_v[1]
+		self.v_t = TubeVector(trajectory_v, self.h)
+		self.v_t.inflate(accuracy)
 
-		# Inflating these tube with accuracy
-		self.v[0].inflate(accuracy)
-		self.v[1].inflate(accuracy)
+		ctc_equal = CtcFunction(Function("a", "b", "a-b"))
+
+		# Storage of the velocity in the tube
+		self.cn.add(ctc_equal, [self.v[0], self.v_t[0]])
+		self.cn.add(ctc_equal, [self.v[1], self.v_t[1]])
+
+		# self.v[0] &= trajectory_v[0]
+		# self.v[1] &= trajectory_v[1]
+
+		# # Inflating these tube with accuracy
+		# self.v[0].inflate(accuracy)
+		# self.v[1].inflate(accuracy)
 
 	def add_control(self, t, U):
 		trajectory_u = TrajectoryVector(dict(zip(t, U.tolist())))
 		trajectory_u.truncate_tdomain(self.tdomain)
 		self.u &= trajectory_u
+		self.u.inflate(0.1)
 
 	def process_coverage(self):
 		# The map
@@ -151,11 +165,11 @@ if __name__ == "__main__":
 
 	# Adding velocities in m
 	accuracy_v = 0.03
-	m.add_velocity(Sv[:, 0].T, Sv[:, 1:], accuracy_v)
+	m.add_velocity(Sv[:, 0].T, Sv[:, 1:], 65*accuracy_v)
 
 	# Adding heading in m
 	accuracy_t = 0.01
-	m.add_heading(St[:, 0].T, St[:, 1], accuracy_t)
+	m.add_heading(St[:, 0].T, St[:, 1], 26*accuracy_t)
 
 	# Adding control
 	m.add_control(Su[:, 0].T, Su[:, 1:])
