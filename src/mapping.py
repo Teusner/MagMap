@@ -80,7 +80,7 @@ class Mapping:
 	def add_heading(self, t, heading, accuracy):
 		trajectory_h = Trajectory(dict(zip(t, heading)))
 		trajectory_h.truncate_tdomain(self.tdomain)
-		self.x[2] = Tube(trajectory_h, self.h)
+		self.x[2] &= trajectory_h #Tube(trajectory_h, self.h)
 		self.x[2].inflate(accuracy)
 			
 	def add_velocity(self, t, velocity, accuracy):
@@ -88,8 +88,8 @@ class Mapping:
 		trajectory_v.truncate_tdomain(self.tdomain)
 
 		# Storage of the velocity in the tube
-		self.v[0] = Tube(trajectory_v[0], self.h)
-		self.v[1] = Tube(trajectory_v[1], self.h)
+		self.v[0] &= trajectory_v[0] #Tube(trajectory_v[0], self.h)
+		self.v[1] &= trajectory_v[1] #Tube(trajectory_v[1], self.h)
 
 		# Inflating these tube with accuracy
 		self.v[0].inflate(accuracy)
@@ -98,7 +98,7 @@ class Mapping:
 	def add_control(self, t, U):
 		trajectory_u = TrajectoryVector(dict(zip(t, U.tolist())))
 		trajectory_u.truncate_tdomain(self.tdomain)
-		self.u = TubeVector(trajectory_u, self.h)
+		self.u &= trajectory_u #TubeVector(trajectory_u, self.h)
 
 	def process_coverage(self):
 		# The map
