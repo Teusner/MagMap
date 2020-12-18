@@ -59,7 +59,7 @@ class Controller:
 
 
 if __name__ == "__main__":
-	c = Controller(tf=10)
+	c = Controller(tf=128)
 	Su, Sg, St, Sv = c.process_data()
 	
 	# Saving data

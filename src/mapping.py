@@ -26,7 +26,7 @@ class Mapping:
 
 		# Creating tubes
 		self.create_tubes()
-		self.create_tubes_magnetometer()
+		#self.create_tubes_magnetometer()
 
 	def create_tubes(self):
 		# State tubes
@@ -95,24 +95,23 @@ class Mapping:
 		self.v_t = TubeVector(trajectory_v, self.h)
 		self.v_t.inflate(accuracy)
 
-		ctc_equal = CtcFunction(Function("a", "b", "a-b"))
+		# ctc_equal = CtcFunction(Function("a", "b", "a-b"))
 
 		# Storage of the velocity in the tube
-		self.cn.add(ctc_equal, [self.v[0], self.v_t[0]])
-		self.cn.add(ctc_equal, [self.v[1], self.v_t[1]])
+		# self.cn.add(ctc_equal, [self.v[0], self.v_t[0]])
+		# self.cn.add(ctc_equal, [self.v[1], self.v_t[1]])
 
-		# self.v[0] &= trajectory_v[0]
-		# self.v[1] &= trajectory_v[1]
+		self.v[0] &= trajectory_v[0]
+		self.v[1] &= trajectory_v[1]
 
-		# # Inflating these tube with accuracy
-		# self.v[0].inflate(accuracy)
-		# self.v[1].inflate(accuracy)
+		# Inflating these tube with accuracy
+		self.v[0].inflate(accuracy)
+		self.v[1].inflate(accuracy)
 
 	def add_control(self, t, U):
 		trajectory_u = TrajectoryVector(dict(zip(t, U.tolist())))
 		trajectory_u.truncate_tdomain(self.tdomain)
 		self.u &= trajectory_u
-		self.u.inflate(0.1)
 
 	def process_coverage(self):
 		# The map
@@ -187,12 +186,12 @@ if __name__ == "__main__":
 	fig_map.axis_limits(-2.5,2.5,-0.1,0.1, True)
 	fig_map.show()
 
-	fig_map2 = VIBesFigMap("Magnetometer")
-	fig_map2.set_properties(700, 100, 600, 300)
-	fig_map2.smooth_tube_drawing(True)
-	fig_map2.add_tube(m.x_m, "x*", 0, 1)
-	fig_map2.axis_limits(-2.5,2.5,-0.1,0.1, True)
-	fig_map2.show()
+	# fig_map2 = VIBesFigMap("Magnetometer")
+	# fig_map2.set_properties(700, 100, 600, 300)
+	# fig_map2.smooth_tube_drawing(True)
+	# fig_map2.add_tube(m.x_m, "x*", 0, 1)
+	# fig_map2.axis_limits(-2.5,2.5,-0.1,0.1, True)
+	# fig_map2.show()
 
 	fig_dist = VIBesFigTube("Control")
 	fig_dist.set_properties(100, 430, 600, 300)
