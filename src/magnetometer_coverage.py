@@ -52,28 +52,35 @@ My_CMap = {
 if __name__ == "__main__":
 
     # The map
-    m_map = IntervalVector(2, Interval(-15, 15))
+    m_map = IntervalVector(2, Interval(-5, 5))
 
     # All the initial feasible values
-    y = Interval(-oo, 5)
+    y = Interval(-1, 0)
 
-    f_dist = Function("x1", "x2", "p1", "p2", "p3", "p4", "sqrt((p1+p3*cos(p4)-x1)^2+(p2+p3*sin(p4)-x2)^2)")
+    f_dist = Function("x1", "x2", "p1", "p2", "(x1-p1)^2+(x2-p2)^2")
+    f_angle = Function("x1", "x2", "p1", "p2", "atan((x2-p2)/(x1-p1))")
 
-    p = IntervalVector(4, Interval()) # [p1, p2, r, phi]
-    p[0] = Interval(-1, 1)
-    p[1] = Interval(-1, 1)
-    p[2] = Interval(5)
-    p[3] = Interval(3*np.pi/4, 4*np.pi/5)
+    L = Interval(3)
+    L.inflate(0.1)
+    phi = Interval(-np.pi/4, np.pi/4) + Interval(np.pi)
+    robot_box = IntervalVector([[-1, 1], [-1, 1]])
 
-    S = ThickSep_from_function(f_dist, p, y)
+    # Polar separator
+
+    # S=SepPolarXY(L, phi)
+    # S2 = ThickTest_from_ThickSep(S_circle)
+    
+    # Paving the thickset
+    S = SepPolarXY(L, phi)
+    f = Function("x1", "x2", "p1", "p2", "(x1-p1)^2+(x2-p2)^2")
+    g = Function("x1", "x2", "p1", "p2", "atan((x2-p2)/(x1-p1))")
+    S2 = SepTransform(S,f_dist,f_dist)
+    #P = ThickPaving(m_map, ThickTest_from_ThickSep(S_polar), 0.05)
     
     vibes.beginDrawing()
     vibes.setFigureSize(m_map.max_diam(), m_map.max_diam())
     vibes.newFigure("ThickSet")
     vibes.setFigureProperties({'x':0,'y':0, 'width':500, 'height':500})
     pySIVIA(m_map, S, 0.1)
-    P = ThickPaving(m_map, ThickTest_from_ThickSep(S), 0.1, display=True)
-    P.visit(ToVibes(figureName="ThickSet", color_map=My_CMap))
-    
-    vibes.drawBox(-1, 1, -1, 1, "black")
+    #P.visit(ToVibes(figureName="ThickSet", color_map=My_CMap))
     vibes.endDrawing()

@@ -116,7 +116,7 @@ if __name__ == "__main__":
 	fig_dist.add_tube(x[2], "Heading", "#2c3e50[#2c3e50]")
 	fig_dist.add_tube(u[0], "U1", "#2980b9[#2980b9]")
 	fig_dist.add_tube(u[1], "U2", "#c0392b[#c0392b]")
-	fig_dist.add_tube(x[3], "x3", "red")
+	# fig_dist.add_tube(x[3], "x3", "red")
 	fig_dist.show()
 
 	endDrawing()
