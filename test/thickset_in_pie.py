@@ -72,7 +72,7 @@ if __name__ == "__main__":
     vibes.newFigure("ThickSet")
     vibes.setFigureProperties({'x':0,'y':0, 'width':500, 'height':500})
     pySIVIA(m_map, S, 0.1)
-    P = ThickPaving(m_map, ThickTest_from_ThickSep(S), 0.1, display=True)
+    P = ThickPaving(m_map, ThickTest_from_ThickSep(S), 0.01, display=True)
     P.visit(ToVibes(figureName="ThickSet", color_map=My_CMap))
     
     vibes.drawBox(-1, 1, -1, 1, "black")
